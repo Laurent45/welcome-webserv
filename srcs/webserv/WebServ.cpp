@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:13 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/02 16:55:54 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/02 21:36:30 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -154,5 +154,5 @@ void    WebServ::clientConnect(int serverFd)
 		std::cerr << "Epoll_ctl error" << std::endl;
 		return ;
 	}
-	this->_mapFileDescriptors[socketConnect] = new SocketFd(socketConnect, &(this->_mapServers[serverFd]));
+	this->_mapFileDescriptors[socketConnect] = new SocketFd(socketConnect);
 }
