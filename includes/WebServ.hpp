@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:10 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/05 17:01:44 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/19 19:29:47 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #define WEB_SERV_HPP
 
 #include <map>
+#include <sys/epoll.h>
 #include "Server.hpp"
 #include "AFileDescriptor.hpp"
 
@@ -24,15 +25,7 @@ class WebServ
     private:
 
         int                                 _epollFd;
-
-        std::map<int, std::vector<Server> > _mapServers;
-        std::map<int, AFileDescriptor *>    _mapFileDescriptors;
-
-        void    clientConnect(int serverFd);
-		
-        void    doOnRead(int fd);
-        void    doOnWrite(int fd);
-
+        std::map<int, AFileDescriptor *>    _mapFd;
 
     public:
 
@@ -42,12 +35,13 @@ class WebServ
 		WebServ & operator=(WebServ const & rhs);
 		~WebServ();
 
-        void    addServer(std::pair<int, Server> server);
+        void    addServer(int socketFd, Server const & server);
         void    epollInit();
         void    start();
-		int		avoidDoubleSocket(Server const & servers);
-		void	addServerInVector(int, Server const & servers);
-		void	print_serv();
+
+
+        static void	updateEpoll(int epoll, int fd, u_int32_t event, int mod);
+
         
 };
 

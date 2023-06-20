@@ -1,56 +1,29 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Server.hpp                                     :+:      :+:    :+:   */
+/*   Server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/05/23 18:12:31 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/05/23 18:22:03 by lfrederi         ###   ########.fr       */
+/*   Created: 2023/06/19 18:06:05 by lfrederi          #+#    #+#             */
+/*   Updated: 2023/06/19 18:33:10 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef SERVER_CONF_HPP
-#define SERVER_CONF_HPP
+#ifndef SERVER_HPP
+#define SERVER_HPP
 
-#include "Location.hpp"
-#include <string>
+#include "AFileDescriptor.hpp"
+#include "ServerConf.hpp"
 #include <vector>
-#include <map>
 
 #define MAX_CLIENT 10 
 
-class Server
+class Server : public AFileDescriptor
 {
 	private:
 
-		std::string							_root;
-		int									_port;
-		std::string							_server_name;
-		std::string							_IP;
-		std::string							_error_pages;
-		std::vector<std::string>			_index;
-		bool								_autoindex;
-		long int							_client_body_size;
-		std::map<std::string, std::string>	_cgi;
-		std::vector<Location>				_location;
-
-
-		void						setCgi(std::vector<std::string> token);
-		void						setPort(std::vector<std::string> token);
-		void						setRoot(std::vector<std::string> token);
-		void						setIp(std::vector<std::string> token);
-		void						setIndex(std::vector<std::string> token);
-		void						setAutoindex(std::vector<std::string> token);
-		void						setName(std::vector<std::string> token);
-		void						setError(std::vector<std::string> token);
-		void						setClientBodySize(std::vector<std::string> token);
-		int							skipLocationBlock(std::string str, int count);
-		void						parseServer(std::string str, int &count);
-		int							getLocationBloc(std::string str, int &count);
-		typedef void (Server::*Server_func)(std::vector<std::string> );
-		void init_vector_Server_fct(std::vector<Server_func> &funcs);
-
+		std::vector<ServerConf> _serverConfs;
 
 	public:
 		Server(void);
@@ -58,30 +31,14 @@ class Server
 		Server &operator=(Server const &src);
 		virtual ~Server();
 
-		void						addLocation(std::string str, int &count, int &Server_ct);
+		Server(std::vector<ServerConf> const & serverConfs);
 
-		/*
-		 ** Server getters
-		 */
-		int							const &getPort() const;
-		std::string					const &getRoot() const;
-		std::string					const &getName() const;
-		std::string					const &getIp() const;
-		std::string					const &getError() const;
-		std::vector<std::string>	const &getIndex() const;
-		bool						const &getAutoindex() const;
-		long int					const &getClientBodySize() const;
-		std::vector<Location>		const &getLocation() const;
-		std::map<std::string, std::string>	const &getCgi() const;
+		std::vector<ServerConf> const & getServerConfs() const;
 
-		void						setServer(const std::string &str);
-		void 						cleanNames(Server &serv2);
-		void 						cleanDupServer(std::vector<Server> ServerInfo);
+		virtual void doOnRead(std::map<int, AFileDescriptor *> & mapFd);
+		virtual void doOnWrite(std::map<int, AFileDescriptor *> & mapFd);
+		virtual void doOnError(std::map<int, AFileDescriptor *> & mapFd, uint32_t event);
 
 };
 
-std::ostream    &operator<<(std::ostream &o, Server const &i);
-
-std::ostream    &operator<<(std::ostream &o, std::vector<Server>  const &srv);
-std::ostream    &operator<<(std::ostream &o, std::vector<std::string>  const &str);
 #endif

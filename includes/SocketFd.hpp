@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:13 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/07 22:48:15 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/19 20:13:42 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,22 +18,20 @@
 #include "Server.hpp"
 
 #define BUFFER_SIZE		1024
-#define	SUCCESS			0
-#define	READ_AGAIN		1
-#define	CLIENT_CLOSE	2
-#define ERROR			3
 
 class SocketFd : public AFileDescriptor
 {
 	private:
-	
-		std::vector<Server> const *	_serverInfo;
-		Request			_request;
+		std::vector<unsigned char>		_rawData;
+		std::vector<ServerConf> 		_serverInfo;
+		ServerConf 						_serverInfoCurr; 
+		Request							_request;
+		bool							_responseReady;
 
 		SocketFd(void);
 
-		int		searchRequestLine();
-		int		searchHeaders();
+		bool	searchRequestLine();
+		bool	searchHeaders();
 
 	public:
 		
@@ -42,17 +40,18 @@ class SocketFd : public AFileDescriptor
 		virtual ~SocketFd();
 
 		// Constructors
-		SocketFd(int fd, std::vector<Server> const * serverInfo);
-
+		SocketFd(int epollFd, int fd, std::vector<ServerConf> const & serverInfo);
 
 		// Geters
 		Request const & getRequest() const;
-		Server const &	getServerInfo() const;
+		ServerConf const &	getServerInfo() const;
 
 		// Public methods
-		int		readRequest();
-		void	prepareResponse(int ret, int epollFd);
-		void	sendResponse();
+		virtual void doOnRead(std::map<int, AFileDescriptor *> & mapFd);
+		virtual void doOnWrite(std::map<int, AFileDescriptor *> & mapFd);
+		virtual void doOnError(std::map<int, AFileDescriptor *> & mapFd, uint32_t event);
+
+		void	responseCgi(std::string const & response);
 };
 
 #endif

@@ -196,4 +196,40 @@ class EpollInitError : public std::exception
 		}
 };
 
+class RequestError : public std::exception
+{
+	private:
+		std::string	_msg;
+
+	public:
+		RequestError(std::string msg)
+		:	_msg(msg) {}
+
+		~RequestError() throw() {};
+
+		char const	*what() const throw()
+		{
+			std::cerr << "Error while request processing" << std::endl;
+			return _msg.c_str();
+		}
+};
+
+class FileDescriptorError : public std::exception
+{
+	private:
+		std::string	_msg;
+
+	public:
+		FileDescriptorError(std::string msg)
+		:	_msg(msg) {}
+
+		~FileDescriptorError() throw() {};
+
+		char const	*what() const throw()
+		{
+			std::cerr << "Error while handle file descriptor" << std::endl;
+			return _msg.c_str();
+		}
+};
+
 #endif

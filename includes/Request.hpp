@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 18:20:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/07 23:01:20 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/11 20:45:21 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,7 @@ class Request
 		std::string							_httpMethod;
 		std::string							_pathRequest;
 		std::string							_fileName;
+		std::string							_extension;
 		std::string							_queryParam;
 		std::string							_httpVersion;
 		std::map<std::string, std::string>	_headers;
@@ -50,6 +51,9 @@ class Request
 		// Geters
 		std::string const & getHttpMethod() const;
 		std::string const & getPathRequest() const;
+		std::string const &	getFileName() const;
+		std::string	const & getExtension() const;
+		std::string const & getQueryParam() const;
 		std::string const & getHttpVersion() const;
 		std::map<std::string, std::string> const & getHeaders() const;
 		std::string const & getMessageBody() const;
@@ -65,8 +69,7 @@ class Request
 		// Members methods
 		bool	handleRequestLine(std::string requestLine);
 		bool	handleHeaders(std::string headers);
-		int		handleMessageBody(std::vector<unsigned char> messageBody);
-		void	print(); // REMOVE
+		bool	handleMessageBody(std::vector<unsigned char> messageBody);
 
 };
 

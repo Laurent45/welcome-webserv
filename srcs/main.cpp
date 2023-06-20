@@ -32,7 +32,6 @@ int     main(int argc, const char **argv)
 	{
         Parser parser(argv[argc]);
 		parser.parseConfFile(webServ);
-		webServ.print_serv();
         webServ.epollInit();
 		//autoindex autind("/");
 		//std::cout<<autind.getIndexPage()<<std::endl;

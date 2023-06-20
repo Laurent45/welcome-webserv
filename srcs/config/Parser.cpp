@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/31 19:39:21 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/02 09:19:13 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/19 20:00:08 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,10 +14,15 @@
 #include "Syntax.hpp"
 #include "Exception.hpp"
 #include "Debugger.hpp"
+
 #include <sys/socket.h> // socket
 #include <netinet/in.h> // sockaddr_in
 #include <arpa/inet.h> // inet_addr
 #include <netdb.h> // getprotobyname
+
+/*****************
+* CANNONICAL FORM
+*****************/
 
 Parser::Parser()
 {}
@@ -37,9 +42,15 @@ Parser::~Parser()
 Parser::Parser(std::string configFile) : _configFile(configFile)
 {}
 
-void    Parser::parseConfFile(WebServ & webServ) const
+/******************************************************************************/
+
+/****************
+* PUBLIC METHODS
+****************/
+
+void    Parser::parseConfFile(WebServ & webServ)
 {
-    std::vector<Server> server_list;
+    std::vector<ServerConf> server_list;
 	std::string conf_string;
 	std::string conf_string_formated = "";
 	std::string temp;
@@ -57,8 +68,15 @@ void    Parser::parseConfFile(WebServ & webServ) const
 	Syntax::formatConfFile(conf_string_formated);
 	conf_string_formated.erase(conf_string_formated.size() - 1);
 	parseServers(server_list, conf_string_formated);
-    createServerSockets(server_list, webServ);
+	fillServersMap(server_list);
+    createServerSockets(webServ);
 }
+
+/******************************************************************************/
+
+/****************
+* PRIVATE METHODS
+****************/
 
 /**
  * @brief 
@@ -105,7 +123,7 @@ std::string     Parser::getStringConf() const
  * @param std::vector<server> server_info 
  * @param std::string str_config 
  */
-void    Parser::parseServers(std::vector<Server> & server_info, std::string str_config) const
+void    Parser::parseServers(std::vector<ServerConf> & server_info, std::string str_config)
 {
 	size_t i = 0;
 	if (DEBUG_STATUS)
@@ -124,9 +142,9 @@ void    Parser::parseServers(std::vector<Server> & server_info, std::string str_
 				std::string	line = Syntax::getLine(str_config, i);
 				if (line.compare("{"))
 					throw(ConfFileParseError("Invalid Server Header"));
-				Server temp_server;
-				temp_server.setServer( Syntax::trimLineToI(str_config, i + 1));
-				temp_server.cleanDupServer(server_info);
+				ServerConf temp_server;
+				temp_server.setServerConf( Syntax::trimLineToI(str_config, i + 1));
+				temp_server.cleanDupServerConf(server_info);
 				server_info.push_back(temp_server);
 			}
 		}
@@ -134,50 +152,56 @@ void    Parser::parseServers(std::vector<Server> & server_info, std::string str_
 	}
 
 	if (DEBUG_STATUS)
-		std::cout<<server_info<<std::endl;
+		std::cout << server_info << std::endl;
 }
 
-void    Parser::createServerSockets(std::vector<Server> const & servers, WebServ & webServ) const
+void    Parser::createServerSockets(WebServ & webServ) const
 {
-	std::vector<Server>::const_iterator it;
+	std::map<std::pair<std::string, int>, std::vector<ServerConf> >::const_iterator it;
 
-	for (it = servers.begin(); it != servers.end(); it++)
+	it = _map.begin();
+	for (; it != _map.end(); it++)
 	{
-        int i = webServ.avoidDoubleSocket(*it);
-		if (i >=0)
-			webServ.addServerInVector(i, *it);
-		else
-		{		
-			int	socketFd, enabled = 1;
-			struct sockaddr_in sockaddr;
-			struct protoent *proto;
+		int	socketFd, enabled = 1;
+		struct sockaddr_in sockaddr;
+		struct protoent *proto;
 
-			//The getprotobyname function is a part of the C library functions which is used to map a protocol name such as 
-			// "tcp" to the corresponding protocol number defined in the netinet/in.h header file.
-			if (!(proto = getprotobyname("tcp")))
-				throw(SetServerException("Problem using protobyname, protocol not found"));
-			if ((socketFd = socket(AF_INET, SOCK_STREAM, proto->p_proto)) == -1)
-				throw(SetServerException("Problem creating Socket"));
-			DEBUG_COUT("Server " + (*it).getName() + " created");
-			// allows a socket to be bound to an address that is already in use, provided that the original socket using the address is no longer active. 
-			//This behavior is useful in cases where the server needs to restart after a crash or when multiple instances of the server need to run on the same machine.
-			//This option allows the socket to be bound to a previously used address and port, which is useful in cases where the socket is closed and then immediately reopened,
-			// without waiting for the operating system to release the socket resources. Without this option,
-			//the socket may fail to bind to the address and port, resulting in a "Address already in use" error.
-			if (setsockopt(socketFd, SOL_SOCKET, SO_REUSEADDR, &enabled, sizeof(enabled)) == -1)
-				throw(SetServerException("Problem setting Socket options"));//
-			sockaddr.sin_family = AF_INET;
-			sockaddr.sin_port = htons((*it).getPort());
-			sockaddr.sin_addr.s_addr = inet_addr((*it).getIp().c_str());
-			if (bind(socketFd, reinterpret_cast<struct sockaddr *>(&sockaddr), sizeof(sockaddr)) == -1)
-				throw(SetServerException("Problem binding socket"));
-			DEBUG_COUT("Server with file descriptor " <<  socketFd << " has been successfully bind on port: " << (*it).getPort());
+		//The getprotobyname function is a part of the C library functions which is used to map a protocol name such as 
+		// "tcp" to the corresponding protocol number defined in the netinet/in.h header file.
+		if (!(proto = getprotobyname("tcp")))
+			throw(SetServerException("Problem using protobyname, protocol not found"));
+		if ((socketFd = socket(AF_INET, SOCK_STREAM, proto->p_proto)) == -1)
+			throw(SetServerException("Problem creating Socket"));
+		DEBUG_COUT("Server " + it->first.first + ":" + Syntax::intToString(it->first.second) + " created");
+		// allows a socket to be bound to an address that is already in use, provided that the original socket using the address is no longer active. 
+		//This behavior is useful in cases where the server needs to restart after a crash or when multiple instances of the server need to run on the same machine.
+		//This option allows the socket to be bound to a previously used address and port, which is useful in cases where the socket is closed and then immediately reopened,
+		// without waiting for the operating system to release the socket resources. Without this option,
+		//the socket may fail to bind to the address and port, resulting in a "Address already in use" error.
+		if (setsockopt(socketFd, SOL_SOCKET, SO_REUSEADDR, &enabled, sizeof(enabled)) == -1)
+			throw(SetServerException("Problem setting Socket options"));//
+		sockaddr.sin_family = AF_INET;
+		sockaddr.sin_port = htons(it->first.second);
+		sockaddr.sin_addr.s_addr = inet_addr(it->first.first.c_str());
+		if (bind(socketFd, reinterpret_cast<struct sockaddr *>(&sockaddr), sizeof(sockaddr)) == -1)
+			throw(SetServerException("Problem binding socket"));
+		DEBUG_COUT("Server with file descriptor " <<  socketFd << " has been successfully bind on port: " << Syntax::intToString(it->first.second));
 
-			//if (fcntl(socketFd, F_SETFL, O_NONBLOCK) == -1) //makes the socket nonblock
-			//    throw(SetServerException("Problem setting the socket"));
-			if (listen(socketFd, MAX_CLIENT))
-				throw(SetServerException("Problem with listen")); 
-			webServ.addServer(std::pair<int, Server>(socketFd, (*it)));  
-		}
+		//if (fcntl(socketFd, F_SETFL, O_NONBLOCK) == -1) //makes the socket nonblock
+		//    throw(SetServerException("Problem setting the socket"));
+		if (listen(socketFd, MAX_CLIENT))
+			throw(SetServerException("Problem with listen")); 
+		webServ.addServer(socketFd, Server(it->second));  
     }
+}
+
+void	Parser::fillServersMap(std::vector<ServerConf> & serverConfs)
+{
+	std::vector<ServerConf>::const_iterator it = serverConfs.begin();
+
+	for (; it != serverConfs.end(); it++)
+	{
+		std::pair<std::string, int> ipPort = make_pair(it->getIp(), it->getPort());
+		_map[ipPort].push_back(*it);
+	}
 }
