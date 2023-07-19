@@ -38,6 +38,7 @@ class Client : public AFileDescriptor
 		ServerConf	getCorrectServer();
 		void		handleScript(WebServ & webServ);
 		void		handleException(std::exception & exception);
+		Location const *	getLocationBlock();
 
 	public:
 		

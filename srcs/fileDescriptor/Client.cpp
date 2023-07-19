@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/19 09:25:27 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/19 21:51:02 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@
 #include "WebServ.hpp"
 
 #include <cstddef>
+#include <cstring> // strncmp
 #include <sys/epoll.h>
 #include <iostream>
 #include <unistd.h> // read
@@ -169,6 +170,11 @@ void Client::doOnWrite(WebServ & webServ)
 	}
 	else
 	{
+		Location const * location = getLocationBlock(); 
+		if (location)
+			std::cout << "Location block is -> " << location->getUri() << std::endl;
+		else
+			std::cout << "Take root server config" << std::endl;
 		getResponse();
 		// postResponse();
 		// deleteResponse();
@@ -325,4 +331,21 @@ void Client::handleException(std::exception &exception)
 	{
 		errorResponse(INTERNAL_SERVER_ERROR);
 	}
+}
+
+Location const * Client::getLocationBlock()
+{
+	std::vector<Location>::const_reverse_iterator it = _serverInfoCurr.getLocation().rbegin();
+
+	for (; it != _serverInfoCurr.getLocation().rend(); it++)
+	{
+		int result = std::strncmp(
+			(_request.getPathRequest() + "/").c_str(), 
+			it->getUri().c_str(), 
+			it->getUri().size()
+		);
+		if (result == 0)
+			return &(*it); 
+	}
+	return (NULL);
 }
