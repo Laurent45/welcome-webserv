@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Cgi.cpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 23:51:46 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/19 10:04:33 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/20 18:40:49 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -218,7 +218,7 @@ char **     Cgi::mapCgiParams()
         std::string("PHP_SELF=") + request.getFileName(),
         //std::string("SCRIPT_FILENAME=") + cwd + "/" + request.getPathRequest(),
         std::string("SCRIPT_FILENAME=") + cwd + "/www" + request.getPathRequest(),
-        std::string("SERVER_NAME=") + serverInfo.getName(), // Get to header host ?
+        std::string("SERVER_NAME=") + serverInfo.getName()[0], // Get to header host ?
         std::string("SERVER_PORT=4242"),                    // TODO USE ITOA
         std::string("SERVER_PROTOCOL=") + request.getHttpVersion(),
         std::string("SERVER_SOFTWARE=webserv"),

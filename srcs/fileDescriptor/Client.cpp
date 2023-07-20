@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/19 22:29:03 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/20 18:48:42 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -135,10 +135,22 @@ void Client::doOnRead(WebServ &webServ)
 			webServ.updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
 			return;
 		}
-
 		_serverInfoCurr = getCorrectServer();
-		webServ.updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
+		//dans le server infocurr, gets the servername from the list if exists
+		std::vector<std::string> serversName = _serverInfoCurr.getName();
+		std::vector<std::string>::iterator its = serversName.begin();
+		for (;its !=serversName.end();its++)
+		{
+			if (_request.getHeaders().find("Host")->second == *its)
+			{
+				serversName.clear();
+				serversName.push_back(*its);
+				_serverInfoCurr.setName(serversName);
+				break;
+			}
+		}
 	}
+		webServ.updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
 }
 
 /**
@@ -170,8 +182,10 @@ void Client::doOnWrite(WebServ & webServ)
 
 	if (location)
 	{
-		if (location->getUri()[0] == '/')
-			path = _serverInfoCurr.getRoot() + location->getUri();
+		if (location->getUseUri() && location->getUri()[0] == '/')
+			path = location->getLocRoot() + location->getUri();
+		else if (!location->getUseUri() && location->getUri()[0] == '/')
+			path = location->getLocRoot();
 		else
 			path = location->getUri();
 		request = _request.getPathRequest().substr(location->getUri().size() - 1);
@@ -268,6 +282,7 @@ void Client::errorResponse(status_code_t status)
 void Client::getResponse()
 {
 	// TODO: Verifier avec le serverConf le path du fichier et son existence OU errorResponse(NOT_FOUND) and change / to index.html
+	//attention de bien prendre le root du bloc location (par defaut meme que serveur , mis a jour s'il existe dans le location bloc)
 	std::cout << _request;
 
 	std::vector<unsigned char> body;
@@ -284,7 +299,7 @@ void Client::getResponse()
 		is.read(buffer, length);
 		body = std::vector<unsigned char>(buffer, buffer + length);
 		is.close();
-		delete buffer;
+		delete []buffer;
 
 		resp_t resp = {OK, body, _request.getExtension(), _rawData, true};
 		Response::createResponse(resp);
@@ -297,20 +312,32 @@ void Client::getResponse()
 }
 
 ServerConf Client::getCorrectServer()
-{
+{//TODO checker si il n'y a pas de nom de server
 	std::vector<ServerConf>::iterator it = _serverInfo.begin();
 	for (; it != _serverInfo.end(); it++)
 	{
-		if (_request.getHeaders().find("Host")->second == it->getName())
-			return (*it);
+		std::vector<std::string> serversName = it->getName();
+		std::vector<std::string>::iterator its = serversName.begin();
+		for (;its !=serversName.end();its++)
+		{
+			if (_request.getHeaders().find("Host")->second == *its)
+				return (*it);
+		}
 	}
+
 	it = _serverInfo.begin();
 	for (; it != _serverInfo.end(); it++)
 	{
-		std::vector<Location>::const_iterator it1 = it->getLocation().begin();
-		for (; it1 != it->getLocation().end(); it1++)
-			if (_request.getPathRequest() == it1->getRoot())
-				return (*it);
+		std::vector<Location>::const_reverse_iterator it2 = it->getLocation().rbegin();
+		for (; it2 != it->getLocation().rend(); it2++)
+			{
+				int result = std::strncmp(
+				(_request.getPathRequest() + "/").c_str(), 
+				it2->getUri().c_str(), 
+				it2->getUri().size());
+				if (result == 0)
+					return (*it); 
+			}
 	}
 	return (*(_serverInfo.begin()));
 }

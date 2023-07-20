@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerConf.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/23 18:24:01 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/19 17:28:12 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/20 18:41:04 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,13 +51,14 @@ const ServerConf::server_instruction_tab_entry_t	ServerConf::SERVER_INSTRUCTIONS
 ServerConf::ServerConf(void)
 	: _root("html"),
 	  _port(8080),
-	  _server_name(""),
+	  _server_name(),
 	  _IP("0.0.0.0"),
 	  _autoindex(false),
 	  _client_body_size(1000000)
 {
 	_index.push_back("index");
 	_index.push_back("index.html");
+	_server_name.push_back("");
 }
 
 ServerConf::ServerConf(ServerConf const &src)
@@ -104,7 +105,7 @@ ServerConf::~ServerConf()
 std::string const &ServerConf::getRoot() const { return (_root); }
 std::map<std::string, std::string> const &ServerConf::getCgi() const { return (_cgi); }
 int const &ServerConf::getPort() const { return (_port); }
-std::string const &ServerConf::getName() const { return (_server_name); }
+std::vector<std::string> const &ServerConf::getName() const { return (_server_name); }
 std::vector<std::string> const &ServerConf::getIndex() const { return (_index); }
 bool const &ServerConf::getAutoindex() const { return (_autoindex); }
 std::string const &ServerConf::getIp() const { return (_IP); }
@@ -172,8 +173,7 @@ void ServerConf::setIp(std::vector<std::string> token)
 
 void ServerConf::setName(std::vector<std::string> token)
 {
-	size_t i = 0;
-	_server_name = "";
+	_server_name.push_back("");
 	if (token.size() < 2)
 		throw(ConfFileParseError("Parameter problem with ServerConf name"));
 	token.erase(token.begin());
@@ -184,12 +184,7 @@ void ServerConf::setName(std::vector<std::string> token)
 	}
 	std::sort(token.begin(), token.end());
 	token.erase(std::unique(token.begin(), token.end()), token.end()); // enleve les noms en doublons dans chaque serveur
-	for (; i < token.size(); i++)
-	{
-		_server_name += token[i];
-		if (i != token.size() - 1)
-			_server_name += " ";
-	}
+	_server_name = token;
 }
 
 void ServerConf::setError(std::vector<std::string> token)
@@ -277,14 +272,15 @@ void ServerConf::cleanDupServerConf(std::vector<ServerConf> Server_info)
 	std::string list_names;
 	std::string res;
 	std::vector<std::string> vect_names1;
-	std::vector<std::string> vect_names2 = StringUtils::splitString(_server_name);
+	std::vector<std::string> vect_names2 = _server_name;
 
 	for (; it != Server_info.end(); it++)
 	{
 		if (!(this->_IP.compare(it->_IP)) && (this->_port == (it->_port)))
 		{
-			list_names = (*it).getName();
-			vect_names1 = StringUtils::splitString(list_names);
+			//list_names = (*it).getName();
+			//vect_names1 = StringUtils::splitString(list_names);
+			vect_names1 = (*it).getName();
 			std::vector<std::string> vect_names4(vect_names1.size() + vect_names2.size());
 			it2 = std::set_intersection(vect_names1.begin(), vect_names1.end(), vect_names2.begin(), vect_names2.end(), vect_names4.begin());
 			vect_names4.resize(it2 - vect_names4.begin());
@@ -295,13 +291,7 @@ void ServerConf::cleanDupServerConf(std::vector<ServerConf> Server_info)
 			std::vector<std::string> vect_names3;
 			std::set_difference(vect_names2.begin(), vect_names2.end(),
 								vect_names1.begin(), vect_names1.end(), std::inserter(vect_names3, vect_names3.begin()));
-			for (std::vector<std::string>::iterator it = vect_names3.begin(); it != vect_names3.end(); it++)
-			{
-				res += *it;
-				if (it != vect_names3.end() - 1)
-					res += " ";
-			}
-			this->_server_name = res;
+			this->_server_name = vect_names3;
 		}
 	}
 }

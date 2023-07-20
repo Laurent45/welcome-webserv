@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerConf.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/23 18:12:31 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/19 17:27:13 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/20 18:09:01 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,7 +39,7 @@ class ServerConf
 
 		std::string							_root;
 		int									_port;
-		std::string							_server_name;
+		std::vector<std::string>			_server_name;
 		std::string							_IP;
 		std::string							_error_pages;
 		std::vector<std::string>			_index;
@@ -55,7 +55,7 @@ class ServerConf
 		void	setIp(std::vector<std::string> token);
 		void	setIndex(std::vector<std::string> token);
 		void	setAutoindex(std::vector<std::string> token);
-		void	setName(std::vector<std::string> token);
+		
 		void	setError(std::vector<std::string> token);
 		void	setClientBodySize(std::vector<std::string> token);
 
@@ -80,7 +80,7 @@ class ServerConf
 		 */
 		int							const &getPort() const;
 		std::string					const &getRoot() const;
-		std::string					const &getName() const;
+		std::vector<std::string>	const &getName() const;
 		std::string					const &getIp() const;
 		std::string					const &getError() const;
 		std::vector<std::string>	const &getIndex() const;
@@ -93,6 +93,7 @@ class ServerConf
 		void	addLocation(std::string str, int &count, int &ServerConf_ct);
 		void 	cleanDupServerConf(std::vector<ServerConf> ServerConfInfo);
 		void	sortLocationBlock();
+		void	setName(std::vector<std::string> token);
 
 		struct server_instruction_tab_entry_t
 		{

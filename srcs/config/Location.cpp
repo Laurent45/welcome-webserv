@@ -29,7 +29,7 @@ const Location::location_instruction_tab_entry_t	Location::LOCATION_INSTRUCTIONS
 Location::Location(int port, int loc_index, std::map<std::string, std::string> cgi, bool autoindex, std::vector<std::string> index, std::string root, int client_body_size)
 	: _port(port),
 	  _loc_index(loc_index),
-	  _root(root),
+	  _locRoot(root),
 	  _index(index),
 	  _cgi(cgi),
 	  _autoindex(autoindex),
@@ -39,6 +39,7 @@ Location::Location(int port, int loc_index, std::map<std::string, std::string> c
 	_allow_method.push_back("GET");
 	_allow_method.push_back("DELETE");
 	_upload_dir = "";
+	_useUri = 1;
 }
 
 Location::Location()
@@ -47,7 +48,7 @@ Location::Location()
 Location::Location(const Location &src)
 	: _port(src._port),
 	  _loc_index(src._loc_index),
-	  _root(src._root),
+	  _locRoot(src._locRoot),
 	  _allow_method(src._allow_method),
 	  _index(src._index),
 	  _cgi(src._cgi),
@@ -64,7 +65,7 @@ Location &Location::operator=(const Location &src)
 	{
 		_port = src._port;
 		_loc_index = src._loc_index;
-		_root = src._root;
+		_locRoot = src._locRoot;
 		_allow_method = src._allow_method;
 		_index = src._index;
 		_cgi = src._cgi;
@@ -91,15 +92,15 @@ bool const &Location::getAutoindex() const { return _autoindex; }
 std::vector<std::string> const &Location::getIndex() const { return _index; }
 std::string const &Location::getReturn() const { return _return; }
 std::vector<std::string> const &Location::getAllowMethod() const { return _allow_method; }
-std::string const &Location::getRoot() const { return _root; }
+std::string const &Location::getLocRoot() const { return _locRoot; }
 std::string const &Location::getUploadDir() const { return _upload_dir; }
 std::map<std::string, std::string> const &Location::getCgi() const { return _cgi; }
 long int const &Location::getClientBodySize() const { return (_client_body_size); }
 std::string const &Location::getError() const { return (_error_pages); }
+bool const &Location::getUseUri() const{ return (_useUri);}
 
 void Location::setLocation(const std::string &str, int &count)
 {
-
 	std::string line = StringUtils::getLine(str, count);
 	std::vector<std::string> token;
 	token = StringUtils::splitString(line, WHITESPACES);
@@ -126,7 +127,7 @@ void Location::setLocation(const std::string &str, int &count)
 }
 void Location::init_vector_loc_fct(std::vector<loc_func> &funcs)
 {
-	funcs.push_back(&Location::setRoot);
+	funcs.push_back(&Location::setLocRoot);
 	funcs.push_back(&Location::setAllowMethod);
 	funcs.push_back(&Location::setIndex);
 	funcs.push_back(&Location::setCgi);
@@ -160,14 +161,13 @@ void Location::setUri(std::vector<std::string> token)
 {
 	if (token.size() < 2)
 		throw(ConfFileParseError("Invalid Location directive : not enough arguments"));
-	else if (token.size() == 2)
+	else if (token.size() == 2)	{
 		_uri = token[1];
-	else if (token.size() == 3)
-	{
-		if (!token[1].compare("="))
-			_uri = token[1] + " " + token[2];
-		else
-			throw(ConfFileParseError("Invalid Location directive : invalid Location modifier " + token[1]));
+	if (_uri[_uri.size() - 1] != '/')
+		_uri+="/";
+	}
+	else {
+		throw(ConfFileParseError("Invalid Location directive "));
 	}
 }
 
@@ -214,11 +214,12 @@ void Location::setAllowMethod(std::vector<std::string> token)
 	_allow_method.push_back(token[i].erase(token[i].size() - 1));
 }
 
-void Location::setRoot(std::vector<std::string> token)
+void Location::setLocRoot(std::vector<std::string> token)
 {
 	if (token.size() > 2)
 		throw(ConfFileParseError("Location bloc [" + StringUtils::intToString(_loc_index) + "] : Only one root allowed"));
-	_root = token[1].erase(token[1].size() - 1);
+	_locRoot = token[1].erase(token[1].size() - 1);
+	_useUri = 0;
 }
 
 void Location::setUploadDir(std::vector<std::string> token)
@@ -314,8 +315,8 @@ std::ostream &operator<<(std::ostream &o, Location const &i)
 	o << "    autoindex			=	[" << i.getAutoindex() << "]" << std::endl;
 	if (i.getIndex().empty() == false)
 		o << "    index			=	[" << i.getIndex() << "]" << std::endl;
-	if (i.getRoot().empty() == false)
-		o << "    root			=	[" << i.getRoot() << "]" << std::endl;
+	if (i.getLocRoot().empty() == false)
+		o << "    root			=	[" << i.getLocRoot() << "]" << std::endl;
 	if (i.getReturn().empty() == false)
 		o << "    redirect			=	[" << i.getReturn() << "]" << std::endl;
 	if (i.getAllowMethod().empty() == false)
