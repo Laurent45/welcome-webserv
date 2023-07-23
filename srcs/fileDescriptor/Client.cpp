@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/22 20:43:50 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/23 12:33:58 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,6 +27,7 @@
 #include <fstream>
 #include <sys/socket.h> // recv
 #include <algorithm>	// search
+#include <csignal>		// kill
 
 /*****************
  * CANNONICAL FORM
@@ -67,6 +68,8 @@ Client &Client::operator=(Client const &rhs)
 
 Client::~Client()
 {
+	if (_cgi.getPidChild() != -1)
+		kill(_cgi.getPidChild(), SIGTERM);
 }
 /******************************************************************************/
 

@@ -1,19 +1,78 @@
-HTTP/1.1 200 OK
-Content-Type: text/html
-Content-Length: [950]
-
 <!DOCTYPE html>
 <html>
 <head>
-    <title>POST Request</title>
+  <title>Page POST</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      font-family: Arial, sans-serif;
+    }
+
+    h1 {
+      font-size: 40px;
+      text-align: center;
+    }
+
+    .form-container {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 30px;
+      width: 800px;
+    }
+
+    .form-container .form {
+      width: 350px;
+    }
+
+    .form-container label {
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    .form-container input[type="text"],
+    .form-container input[type="file"],
+    .form-container button {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+    }
+
+    .form-container button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    .form-container button:hover {
+      background-color: #45a049;
+    }
+  </style>
 </head>
 <body>
-    <h1>POST REQUEST</h1>
-    <form action="#" method="post">
-        <label for="word">Mot:</label>
-        <input type="text" id="word" name="word">
-        <br><br>
-        <input type="submit" value="Envoyer">
-    </form>
+  <h1>REQUETE POST</h1>
+  <div class="form-container">
+    <div class="form">
+      <h2>Formulaire de texte</h2>
+      <form action="/www/posts/post_pic.html" method="post">
+        <label for="text-input">Phrase :</label>
+        <input type="text" id="text-input" name="text-input" placeholder="Entrez votre phrase" required>
+        <button type="submit">Envoyer</button>
+      </form>
+    </div>
+    <div class="form">
+      <h2>Formulaire de fichier</h2>
+      <form action="/www/posts/post_file.html" method="post" enctype="multipart/form-data">
+        <label for="file-input">Fichier :</label>
+        <input type="file" id="file-input" name="file-input" required>
+        <button type="submit">Envoyer</button>
+      </form>
+    </div>
+  </div>
 </body>
 </html>

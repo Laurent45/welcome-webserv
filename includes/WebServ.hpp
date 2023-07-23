@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:10 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/19 09:17:37 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/23 11:30:32 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,8 @@
 #include "AFileDescriptor.hpp"
 
 #define MAX_EVENTS 1024
+
+extern bool g_run;
 
 class WebServ
 {
@@ -45,6 +47,7 @@ class WebServ
         void    epollInit();
         void	updateEpoll(int fd, u_int32_t event, int mod);
         void    start();
+
 };
 
 #endif

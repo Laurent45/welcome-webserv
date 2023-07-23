@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/29 22:17:26 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/29 22:17:50 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/23 13:01:34 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,16 +16,15 @@
 #include "Debugger.hpp"
 #include "Parser.hpp"
 
-extern volatile bool g_run;
+#include <csignal>
 
-static int  printUsage(char const *const prog_name) {
-    std::cerr << "Usage: " << prog_name << " [-v] [file.conf]" << std::endl;
-    return (1);
-}
+void     handleSigInt(int code);
 
 int     main(int argc, const char **argv) 
 {
 	WebServ webServ;
+    signal(SIGINT, handleSigInt);
+
 	argc = 1;
     if (argv[argc] && !std::strcmp(argv[argc], "-v"))
 	{
@@ -36,7 +35,10 @@ int     main(int argc, const char **argv)
     if (argv[argc] == NULL)
         argv[argc] = "conf/default.conf";
     else if (argv[argc + 1] != NULL)
-        return (printUsage(argv[0]));
+    {
+        std::cerr << "Usage: " << argv[0] << " [-v] [file.conf]" << std::endl;
+        return (1);
+    }
 
     try
 	{
@@ -53,3 +55,11 @@ int     main(int argc, const char **argv)
 
 	return (0);
 }
+
+
+void     handleSigInt(int code)
+{
+    //(void) code;
+    std::cout << "Catch signal: " << code << std::endl;
+    g_run = false;
+}      

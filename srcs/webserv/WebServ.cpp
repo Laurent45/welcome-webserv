@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:13 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/21 23:27:41 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/23 12:58:09 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,8 @@
 #include <fcntl.h> // fcntl
 #include <stdio.h> // REMOVE
 #include "Debugger.hpp"
+
+bool g_run = true;
 
 /*****************
 * CANNONICAL FORM
@@ -49,12 +51,14 @@ WebServ &   WebServ::operator=(WebServ const & rhs)
 
 WebServ::~WebServ()
 {
-	// TODO: handle AFileDescriptor according to origin
 	std::map<int, AFileDescriptor *>::iterator it = this->_mapFd.begin();
 	for (; it != this->_mapFd.end(); it++)
 	{
-		delete it->second;
-		close(it->first);
+		if (dynamic_cast<Client *>(it->second) || dynamic_cast<Server *>(it->second))
+		{
+			delete it->second;
+			close(it->first);
+		}
 	}
 	close(_epollFd);
 
@@ -126,9 +130,8 @@ void    WebServ::start()
 {
     int nfds;
     struct epoll_event events[MAX_EVENTS];
-    int j = 0;
 
-	while (j != 1)
+	while (g_run)
 	{
         // How handle if nfds < 0
 		nfds = epoll_wait(this->_epollFd, events, MAX_EVENTS, 0);
@@ -208,9 +211,3 @@ void	WebServ::removeFd(int fd)
 /***********************
 * PUBLIC STATIC METHODS
 ***********************/
-
-//void	WebServ::popFd(int fd)
-//{
-//	close()
-//}
-
