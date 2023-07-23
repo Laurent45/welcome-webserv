@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/23 17:56:03 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/23 18:01:28 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -140,19 +140,6 @@ void	Client::doOnRead()
 			return;
 		}
 		_serverInfoCurr = getCorrectServer();
-		//dans le server infocurr, gets the servername from the list if exists
-		std::vector<std::string> serversName = _serverInfoCurr.getName();
-		std::vector<std::string>::iterator its = serversName.begin();
-		for (;its !=serversName.end();its++)
-		{
-			if (_request.getHeaders().find("Host")->second == *its)
-			{
-				serversName.clear();
-				serversName.push_back(*its);
-				_serverInfoCurr.setName(serversName);
-				break;
-			}
-		}
 		_webServ->updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
 	}
 }

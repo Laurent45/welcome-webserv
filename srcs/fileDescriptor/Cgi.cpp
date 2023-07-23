@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 23:51:46 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/23 17:44:55 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/23 17:59:43 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -324,7 +324,7 @@ void    Cgi::runChildProcess(int pipeToCgi[2], int pipeFromCgi[2])
     dup2(pipeToCgi[0], STDIN_FILENO);
     dup2(pipeFromCgi[1], STDOUT_FILENO);
 
-    //execve(argv[0], argv, envCgi);
+    execve(argv[0], argv, envCgi);
 
     delete [] cgiPathCopy;
     delete [] scriptCopy;
