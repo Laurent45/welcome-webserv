@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/23 12:33:58 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/23 18:24:57 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -147,9 +147,10 @@ void	Client::doOnRead()
 		std::vector<std::string>::iterator its = serversName.begin();
 		for (;its !=serversName.end();its++)
 		{
-			if (_request.getHeaders().find("Host")->second == *its)
+			if (_request.getHeaders().find("Host")->second == *its + ":" + StringUtils::intToString(_serverInfoCurr.getPort()))
 			{
 				serversName.clear();
+				serversName.push_back(*its);
 				serversName.push_back(*its);
 				_serverInfoCurr.setName(serversName);
 				break;
@@ -277,7 +278,7 @@ ServerConf Client::getCorrectServer()
 		std::vector<std::string>::iterator its = serversName.begin();
 		for (;its !=serversName.end();its++)
 		{
-			if (_request.getHeaders().find("Host")->second == *its)
+			if (_request.getHeaders().find("Host")->second == *its + ":" + StringUtils::intToString(it->getPort()))
 				return (*it);
 		}
 	}
