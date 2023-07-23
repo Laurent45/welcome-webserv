@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:10 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/23 11:30:32 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/23 17:57:19 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,8 +42,8 @@ class WebServ
 
         void    addFd(int fd, AFileDescriptor * server);
         void	eraseFd(int fd);
-        void    addClientTimes(std::pair<int, long long> clientInfo);
         void    removeFd(int fd);
+        void    addClientTimes(std::pair<int, long long> clientInfo);
         void    epollInit();
         void	updateEpoll(int fd, u_int32_t event, int mod);
         void    start();

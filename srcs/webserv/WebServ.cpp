@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:13 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/23 12:58:09 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/23 17:57:15 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #include "Exception.hpp"
 #include "Client.hpp"
 #include "Cgi.hpp"
+#include "Debugger.hpp"
 
 #include <cstring> // strerror, bzero
 #include <errno.h> // errno
@@ -21,7 +22,6 @@
 #include <sys/socket.h> // accept
 #include <fcntl.h> // fcntl
 #include <stdio.h> // REMOVE
-#include "Debugger.hpp"
 
 bool g_run = true;
 

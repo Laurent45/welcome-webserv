@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 23:51:46 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/23 12:47:11 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/23 17:44:55 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -156,11 +156,17 @@ void Cgi::doOnRead()
 
     if (n == 0)
     {
-        std::string str(_rawData.begin(), _rawData.end());
-        start = str.find("\r\n\r\n") + 4;
-        str = str.substr(start);
-        str = Response::cgiSimpleResponse(str);
-        _clientInfo->responseCgi(str);
+        if (!_rawData.empty())
+        {
+            std::string str(_rawData.begin(), _rawData.end());
+            std::cout << "Cgi response: " << str << std::endl;
+            start = str.find("\r\n\r\n") + 4;
+            str = str.substr(start);
+            str = Response::cgiSimpleResponse(str);
+            _clientInfo->responseCgi(str);
+        }
+        else
+            _clientInfo->errorResponse(INTERNAL_SERVER_ERROR);
 
         _webServ->updateEpoll(_fdRead, 0, EPOLL_CTL_DEL);
         close(_fdRead);
@@ -292,15 +298,21 @@ int     Cgi::initChildProcess(int toCgi[2], int fromCgi[2])
 
 void    Cgi::runChildProcess(int pipeToCgi[2], int pipeFromCgi[2])
 {
-    std::string cgiPath = _clientInfo->getServerInfo().getCgi().find("php")->second;
-    char *cgiPathCopy = new char[cgiPath.size() + 1];
-    strcpy(cgiPathCopy, cgiPath.c_str());
+    char * cgiPathCopy = NULL; 
+    char * scriptCopy = NULL;
+
+    // Force to call cgiPath destructor
+    {
+        std::string cgiPath = _clientInfo->getServerInfo().getCgi().find("php")->second;
+        cgiPathCopy = new char[cgiPath.size() + 1];
+        strcpy(cgiPathCopy, cgiPath.c_str());
+    }
 
     std::string script = _clientInfo->getRequest().getFileName();
-    char *scriptCopy = new char[script.size() + 1];
+    scriptCopy = new char[script.size() + 1];
     strcpy(scriptCopy, script.c_str());
 
-    char **argv = new char *[3];
+    char ** argv = new char *[3];
     argv[0] = cgiPathCopy;
     argv[1] = scriptCopy;
     argv[2] = NULL;
@@ -312,17 +324,16 @@ void    Cgi::runChildProcess(int pipeToCgi[2], int pipeFromCgi[2])
     dup2(pipeToCgi[0], STDIN_FILENO);
     dup2(pipeFromCgi[1], STDOUT_FILENO);
 
-    execve(argv[0], argv, envCgi);
+    //execve(argv[0], argv, envCgi);
 
-    delete[] cgiPathCopy;
-    delete[] scriptCopy;
-    delete[] argv;
+    delete [] cgiPathCopy;
+    delete [] scriptCopy;
+    delete [] argv;
     for (int i = 0; envCgi[i]; i++)
-        delete envCgi[i];
-    delete[] envCgi;
-    close(pipeFromCgi[0]);
-    close(pipeFromCgi[1]);
+        delete [] envCgi[i];
+    delete [] envCgi;
     close(pipeToCgi[0]);
-    close(pipeToCgi[1]);
+    close(pipeFromCgi[1]);
+    _webServ->~WebServ();
     exit(EXIT_FAILURE);
 }
