@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 19:19:08 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/16 21:07:01 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/24 17:52:35 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,8 @@
 #define RESPONSE_HPP
 
 #include "HttpUtils.hpp"
+
+class Client;
 
 struct resp_t
 {
@@ -35,7 +37,9 @@ class Response
 
         static void badRequest(std::vector<unsigned char> & rawData);
         static void createResponse(resp_t resp);
-        static std::string cgiSimpleResponse(std::string & body);
+        static void cgiResponse(std::vector<unsigned char> & rawData,
+                                std::string headers, std::vector<unsigned char> & body);
+        static void cgiResponse(std::vector<unsigned char> & rawData);
         static std::string  errorResponse(status_code_t code);
 
 };

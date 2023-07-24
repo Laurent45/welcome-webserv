@@ -35,7 +35,6 @@ class Client : public AFileDescriptor
 
 		ServerConf			getCorrectServer();
 		void				handleScript(std::string const & fullPath);
-		void				handleException(std::exception & exception);
 		Location const *	getLocationBlock();
 		void				handleRequest(Location const * location);
 		std::string 		searchIndexFile(std::string path, std::vector<std::string> const &indexs, bool autoindex);
@@ -60,7 +59,8 @@ class Client : public AFileDescriptor
 
 		void	errorResponse(status_code_t status);
 		void	getResponse();
-		void	responseCgi(std::string const & response);
+		void	responseCgi(std::vector<unsigned char> const & cgiRawData);
+		void	handleException(std::exception const & exception);
 };
 
 #endif

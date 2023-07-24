@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/23 18:01:28 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/24 23:07:09 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -139,6 +139,7 @@ void	Client::doOnRead()
 			_webServ->updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
 			return;
 		}
+		DEBUG_COUT(_request.getHttpMethod() + " " << _request.getPathRequest());
 		_serverInfoCurr = getCorrectServer();
 		_webServ->updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
 	}
@@ -195,12 +196,31 @@ void Client::doOnError(uint32_t event)
  * @brief
  * @param response
  */
-void Client::responseCgi(std::string const &response)
+void Client::responseCgi(std::vector<unsigned char> const & cgiRawData)
 {
 	_responseReady = true;
-	_rawData.assign(response.begin(), response.end());
+	_rawData.assign(cgiRawData.begin(), cgiRawData.end());
 }
 
+
+/**
+ * @brief 
+ * @param exception 
+ */
+void Client::handleException(std::exception const & exception)
+{
+	try
+	{
+		RequestError error = dynamic_cast<const RequestError &>(exception);
+		DEBUG_COUT(error.getCause());
+		errorResponse(error.getStatusCode());
+	}
+	catch (std::exception &exception)
+	{
+		DEBUG_COUT(exception.what());
+		errorResponse(INTERNAL_SERVER_ERROR);
+	}
+}
 /******************************************************************************/
 
 /*****************
@@ -254,7 +274,6 @@ void Client::getResponse()
 
 ServerConf Client::getCorrectServer()
 {
-	//TODO checker si il n'y a pas de nom de server
 	std::vector<ServerConf>::iterator it = _serverInfo.begin();
 	for (; it != _serverInfo.end(); it++)
 	{
@@ -273,10 +292,8 @@ ServerConf Client::getCorrectServer()
 		std::vector<Location>::const_reverse_iterator it2 = it->getLocation().rbegin();
 		for (; it2 != it->getLocation().rend(); it2++)
 		{
-				int result = std::strncmp(
-				(_request.getPathRequest() + "/").c_str(), 
-				it2->getUri().c_str(), 
-				it2->getUri().size());
+			int result = std::strncmp((_request.getPathRequest() + "/").c_str(), 
+				it2->getUri().c_str(), it2->getUri().size());
 				if (result == 0)
 					return (*it); 
 		}
@@ -307,31 +324,14 @@ void	Client::handleScript(std::string const & fullPath)
 }
 
 
-void Client::handleException(std::exception &exception)
-{
-	DEBUG_COUT(exception.what());
-	try
-	{
-		RequestError error = dynamic_cast<RequestError &>(exception);
-		errorResponse(error.getStatusCode());
-	}
-	catch (std::exception &exception)
-	{
-		errorResponse(INTERNAL_SERVER_ERROR);
-	}
-}
-
-
 Location const *Client::getLocationBlock()
 {
 	std::vector<Location>::const_reverse_iterator it = _serverInfoCurr.getLocation().rbegin();
 
 	for (; it != _serverInfoCurr.getLocation().rend(); it++)
 	{
-		int result = std::strncmp(
-			(_request.getPathRequest() + "/").c_str(),
-			it->getUri().c_str(),
-			it->getUri().size());
+		int result = std::strncmp((_request.getPathRequest() + "/").c_str(), 
+									it->getUri().c_str(), it->getUri().size());
 		if (result == 0)
 			return &(*it);
 	}
@@ -353,29 +353,12 @@ void	Client::handleRequest(Location const * location)
 		methods = location->getAllowMethod();
 
 	if (!methods.empty() && std::find(methods.begin(), methods.end(), method) == methods.end())
-		throw RequestError(METHOD_NOT_ALLOWED);
-
-	if (method == "GET")
-	{
-		if (location)
-		{
-			if (std::strncmp(
-					(request + "/").c_str(),
-					location->getUri().c_str(),
-					location->getUri().size()) == 0)
-				fullPath = searchIndexFile(fullPath, location->getIndex(), location->getAutoindex());
-		}
-		else
-		{
-			if (request == "/")
-				fullPath = searchIndexFile(fullPath, _serverInfoCurr.getIndex(), _serverInfoCurr.getAutoindex());
-		}
-	}
+		throw RequestError(METHOD_NOT_ALLOWED, "Method " + method + "is not allowed");
 
 	size_t point = fullPath.rfind(".");
 	if (point != std::string::npos && fullPath.substr(point + 1) == "php")
 		return handleScript(fullPath);
-	throw RequestError(METHOD_NOT_ALLOWED);
+	throw RequestError(METHOD_NOT_ALLOWED, "Should implement GET POST DELETE");
 	/*if (method == "GET")
 		return Response::getResponse(autoindex);
 	if (method == "POST")
@@ -392,21 +375,13 @@ std::string Client::searchIndexFile(std::string path, std::vector<std::string> c
 		if (!FileUtils::fileExists((path + "/" + *it).c_str()))
 			continue;
 		if (!FileUtils::fileRead((path + *it).c_str()))
-			throw RequestError(FORBIDDEN);
+			throw RequestError(FORBIDDEN, "File cannot read");
 		else
 			return path + *it;
 	}
 
 	// otherwise check if autoindex is on
 	if (!autoindex)
-		throw RequestError(FORBIDDEN);
+		throw RequestError(FORBIDDEN, "Autoindex is off");
 	return path;
 }
-
-/*void Client::handlePostRequest(Location *location)
-{
-}
-
-void Client::handleDeleteRequest(Location *location)
-{
-}*/
