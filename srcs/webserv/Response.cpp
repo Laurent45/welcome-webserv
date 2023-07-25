@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 19:19:11 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/24 22:29:13 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/25 09:44:04 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,6 +34,8 @@ void    Response::cgiResponse(std::vector<unsigned char> & rawData,
     if (std::strncmp(cmp.c_str(), statusLine.c_str(), cmp.size()) == 0)
     {
         statusCode = std::atoi(statusLine.substr(cmp.size() - 1, 4).c_str());
+        statusCode =  HttpUtils::getResponseStatus(static_cast<status_code_t>(statusCode))
+                        .first;
         if (statusCode >= 400)
             throw RequestError(static_cast<status_code_t>(statusCode), "Cgi error response status");
     }
@@ -56,8 +58,11 @@ void    Response::cgiResponse(std::vector<unsigned char> & rawData,
 
 std::string     Response::commonResponse(status_code_t status)
 {
+    std::pair<status_code_t, std::string> statusCode = 
+                                HttpUtils::getResponseStatus(status);
+
     std::string common = std::string("HTTP/1.1 ");
-    common += StringUtils::intToString(status) + " " + HttpUtils::RESPONSE_STATUS.at(status) + "\r\n";
+    common += StringUtils::intToString(statusCode.first) + " " + statusCode.second + "\r\n";
     common += "Server: webserv (Ubuntu)\r\n";
     common += "Date: " + TimeUtils::getFormattedDate(time(NULL)) + "\r\n";
 
@@ -69,8 +74,7 @@ std::string     Response::bodyHeaders(std::vector<unsigned char> body, std::stri
     std::string headers = "";
     if (body.empty())
         return headers;
-    // TODO: Check mime type
-    headers += "Content-Type: " + HttpUtils::MIME_TYPES.at(extension) + "\r\n";
+    headers += "Content-Type: " + HttpUtils::getMimeType(extension) + "\r\n";
     headers += "Content-Length: " + StringUtils::intToString(body.size()) + "\r\n";
     return headers;
 }
@@ -97,11 +101,14 @@ void    Response::createResponse(resp_t resp)
 
 std::string     Response::errorResponse(status_code_t code) 
 {
-	std::string error = "<html>\n<head><title>" + StringUtils::intToString(code);
-    error += " " + HttpUtils::RESPONSE_STATUS.at(code);
+    std::pair<status_code_t, std::string> statusCode = 
+                                HttpUtils::getResponseStatus(code);
+
+	std::string error = "<html>\n<head><title>" + StringUtils::intToString(statusCode.first);
+    error += " " + statusCode.second;
     error += "</title></head>\n<body>\n<center><h1>";
     error += StringUtils::intToString(code);
-    error += " " + HttpUtils::RESPONSE_STATUS.at(code);
+    error += " " + statusCode.second;
     error += "</h1></center>\n<hr><center>webserv (Ubuntu)</center>\n</body>\n</html>\n";
     return error;
 }

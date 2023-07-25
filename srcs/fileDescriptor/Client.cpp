@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/24 23:07:09 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/25 10:08:46 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -133,7 +133,7 @@ void	Client::doOnRead()
 		{
 			return;
 		}
-		catch (std::exception &exception)
+		catch (std::exception const &exception)
 		{
 			handleException(exception);
 			_webServ->updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);

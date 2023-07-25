@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 18:21:33 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/24 22:14:35 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/25 09:33:07 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -152,7 +152,7 @@ void	Request::handleRequestLine(std::vector<unsigned char> & rawData)
 	_pathRequest = vec[1];
 	_httpVersion = vec[2];
 
-	if (HttpUtils::isMethodAllowed(_httpMethod) == false)
+	if (_httpMethod != "GET" && _httpMethod != "POST" && _httpMethod != "DELETE")
 		throw RequestError(METHOD_NOT_ALLOWED, "This server doesn't handle this method: " + _httpMethod);
 	if (_httpVersion.compare("HTTP/1.1") != 0)
 		throw RequestError(BAD_REQUEST, "The http version must be HTTP/1.1");

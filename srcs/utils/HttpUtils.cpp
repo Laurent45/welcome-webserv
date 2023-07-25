@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/29 21:37:33 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/03 14:55:11 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/25 10:09:55 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -229,12 +229,22 @@ int		HttpUtils::correctMethodInstruction(std::vector<std::string> token)
 	return -1;
 }
 
-/**
- * @brief 
- * @param method 
- * @return 
- */
-bool	HttpUtils::isMethodAllowed(std::string method)
+
+std::pair<status_code_t, std::string>	HttpUtils::getResponseStatus(status_code_t statusCode)
 {
-	return (method == "GET" || method == "POST" || method == "DELETE");
+	std::map<status_code_t, std::string>::const_iterator it = 
+												HttpUtils::RESPONSE_STATUS.find(statusCode);
+	if (it != HttpUtils::RESPONSE_STATUS.end())
+		return *it;
+	return std::make_pair(INTERNAL_SERVER_ERROR, "Internal Server Error");
+}
+
+
+std::string		HttpUtils::getMimeType(std::string extension)
+{
+	std::map<std::string, std::string>::const_iterator it = 
+												HttpUtils::MIME_TYPES.find(extension);
+	if (it != HttpUtils::MIME_TYPES.end())
+		return it->second;
+	return "application/octet-stream";
 }

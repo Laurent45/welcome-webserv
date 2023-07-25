@@ -215,7 +215,7 @@ class RequestError : public std::exception
 		}
 
 		status_code_t	getStatusCode() {return _statusCode;}
-		std::string		getCause() {return HttpUtils::RESPONSE_STATUS.at(_statusCode) + " (" + _message + ")";}
+		std::string		getCause() {return HttpUtils::getResponseStatus(_statusCode).second + " (" + _message + ")";}
 };
 
 class FileDescriptorError : public std::exception
