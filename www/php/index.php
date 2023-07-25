@@ -1,1 +1,8 @@
-<?php phpinfo(); ?>
+<?php 
+$i = 1;
+while (true) {
+}
+phpinfo(); 
+
+
+?>

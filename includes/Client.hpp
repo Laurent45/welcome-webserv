@@ -20,10 +20,12 @@
 #include "Cgi.hpp"
 
 #define BUFFER_SIZE		1024
+#define	TIMEOUT			5000LL
 
 class Client : public AFileDescriptor
 {
 	private:
+		long long						_startTime;
 		std::vector<unsigned char>		_rawData;
 		std::vector<ServerConf> 		_serverInfo;
 		ServerConf 						_serverInfoCurr; 
@@ -58,9 +60,10 @@ class Client : public AFileDescriptor
 		virtual void doOnWrite();
 		virtual void doOnError(uint32_t event);
 
-		void	errorResponse(status_code_t status);
-		void	getResponse();
 		void	responseCgi(std::string const & response);
+		bool	timeoutReached();
+		void	fillRawData(std::vector<unsigned char> const & data);
+		void	readyToRespond();
 };
 
 #endif

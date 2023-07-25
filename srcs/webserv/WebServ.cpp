@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:13 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/23 12:58:09 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/25 22:17:54 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #include "Exception.hpp"
 #include "Client.hpp"
 #include "Cgi.hpp"
+#include "Response.hpp"
 
 #include <cstring> // strerror, bzero
 #include <errno.h> // errno
@@ -35,7 +36,7 @@ WebServ::WebServ()
 WebServ::WebServ(WebServ const & copy)
     :   _epollFd(copy._epollFd),
         _mapFd(copy._mapFd),
-		_clientTimes(copy._clientTimes)
+		_clients(copy._clients)
 {}
 
 WebServ &   WebServ::operator=(WebServ const & rhs)
@@ -44,7 +45,7 @@ WebServ &   WebServ::operator=(WebServ const & rhs)
     {
         _epollFd = rhs._epollFd;
         _mapFd = rhs._mapFd;
-		_clientTimes = rhs._clientTimes;
+		_clients = rhs._clients;
     }
     return (*this);
 }
@@ -84,9 +85,23 @@ void    WebServ::addFd(int fd, AFileDescriptor * fileDescriptor)
  * @brief 
  * @param fd 
  */
-void	WebServ::eraseFd(int fd)
+void	WebServ::removeFd(int fd)
 {
 	_mapFd.erase(fd);
+}
+
+
+void	WebServ::removeClient(int fd)
+{
+	std::vector<Client *>::iterator it = _clients.begin();
+	for (; it != _clients.end(); it++)
+	{
+		if ((*it)->getFd() == fd)
+		{
+			_clients.erase(it);
+			break;
+		}
+	}
 }
 
 
@@ -94,9 +109,9 @@ void	WebServ::eraseFd(int fd)
  * @brief Keep a track of client start time
  * @param clientInfo A pair which bind a fd with a start time
  */
-void	WebServ::addClientTimes(std::pair<int, long long> clientInfo)
+void	WebServ::addClient(Client * client)
 {
-	_clientTimes.push_back(clientInfo);
+	_clients.push_back(client);
 }
 
 
@@ -134,7 +149,7 @@ void    WebServ::start()
 	while (g_run)
 	{
         // How handle if nfds < 0
-		nfds = epoll_wait(this->_epollFd, events, MAX_EVENTS, 0);
+		nfds = epoll_wait(this->_epollFd, events, MAX_EVENTS, 1);
 
 		for (int i = 0; i < nfds; i++)
 		{
@@ -149,7 +164,16 @@ void    WebServ::start()
 			if (!(event & EPOLLIN) && !(event & EPOLLOUT))
 				aFd->doOnError(event);
 		}
-		//handleTimeout();
+		
+		if (!_clients.empty())
+		{
+			Client * client = _clients[0];
+			if (client->timeoutReached())
+			{
+				Response::errorResponse(REQUEST_TIMEOUT, *client);
+				_clients.erase(_clients.begin());
+			}
+		}
 	}
 }
 
@@ -178,26 +202,27 @@ void	WebServ::updateEpoll(int fd, u_int32_t event, int mod)
  * in mapFd and remove fd is present in clientTimes
  * @param fd Fd number
  */
-void	WebServ::removeFd(int fd)
+void	WebServ::clearFd(int fd)
 {
-	close(fd);
-	if (_mapFd.find(fd) == _mapFd.end())
-		return ;
-
-	if (_mapFd[fd])
-		delete _mapFd[fd];
-
-	_mapFd.erase(fd);
-	
-	std::vector<std::pair<int, long long> >::iterator it = _clientTimes.begin();
-	for (; it != _clientTimes.end(); it++)
+	std::vector<Client *>::iterator it = _clients.begin();
+	for (; it != _clients.end(); it++)
 	{
-		if (it->first == fd)
+		if ((*it)->getFd() == fd)
 		{
-			_clientTimes.erase(it);
+			_clients.erase(it);
 			break;
 		}
 	}
+
+    updateEpoll(fd, 0, EPOLL_CTL_DEL);
+	close(fd);
+
+	if (_mapFd.find(fd) == _mapFd.end())
+		return ;
+	if (_mapFd[fd])
+		delete _mapFd[fd];
+	_mapFd.erase(fd);
+	
 }
 /******************************************************************************/
 

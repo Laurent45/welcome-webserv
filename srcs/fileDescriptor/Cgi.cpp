@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 23:51:46 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/23 12:47:11 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/25 22:22:03 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -153,6 +153,7 @@ void Cgi::doOnRead()
 
     if ((n = read(_fdRead, buffer, BUFFER_SIZE)) > 0)
         _rawData.insert(_rawData.end(), buffer, buffer + n);
+    // TODO: Always check the body size    
 
     if (n == 0)
     {
@@ -163,9 +164,11 @@ void Cgi::doOnRead()
         _clientInfo->responseCgi(str);
 
         _webServ->updateEpoll(_fdRead, 0, EPOLL_CTL_DEL);
+		_webServ->removeFd(_fdRead);
         close(_fdRead);
+        _fdRead = -1;
 
-        _webServ->updateEpoll(_clientInfo->getFd(), EPOLLOUT, EPOLL_CTL_MOD);
+        _clientInfo->readyToRespond();
     }
 }
 
@@ -181,7 +184,9 @@ void Cgi::doOnWrite()
     write(_fdWrite, &body[0], body.size());
 
     _webServ->updateEpoll(_fdWrite, 0, EPOLL_CTL_DEL);
+	_webServ->removeFd(_fdWrite);
     close(_fdWrite);
+    _fdWrite = -1;
 
     _webServ->updateEpoll(_fdRead, EPOLLIN, EPOLL_CTL_MOD);
 }
@@ -195,6 +200,7 @@ void Cgi::doOnWrite()
 void Cgi::doOnError(uint32_t event)
 {
     std::cout << "Client on error, event = " << event << std::endl;
+    _pidChild = -1;
     this->doOnRead();
 }
 /******************************************************************************/

@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/23 18:42:57 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/25 22:21:02 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,13 +17,13 @@
 #include "Exception.hpp"
 #include "WebServ.hpp"
 #include "FileUtils.hpp"
+#include "TimeUtils.hpp"
 
 #include <cstddef>
 #include <cstring> // strncmp
 #include <sys/epoll.h>
 #include <iostream>
 #include <unistd.h> // read
-#include <cstdio>	// perror
 #include <fstream>
 #include <sys/socket.h> // recv
 #include <algorithm>	// search
@@ -40,6 +40,7 @@ Client::Client(void)
 
 Client::Client(Client const &copy)
 	: AFileDescriptor(copy),
+	  _startTime(copy._startTime),
 	  _rawData(copy._rawData),
 	  _serverInfo(copy._serverInfo),
 	  _serverInfoCurr(copy._serverInfoCurr),
@@ -55,6 +56,7 @@ Client &Client::operator=(Client const &rhs)
 	{
 		_fd = rhs._fd;
 		_webServ = rhs._webServ;
+		_startTime = rhs._startTime;
 		_rawData = rhs._rawData;
 		_serverInfo = rhs._serverInfo;
 		_serverInfoCurr = rhs._serverInfoCurr;
@@ -68,8 +70,12 @@ Client &Client::operator=(Client const &rhs)
 
 Client::~Client()
 {
+	if (_cgi.getReadFd() != -1)
+		close(_cgi.getReadFd());
+	if (_cgi.getWriteFd() != -1)
+		close(_cgi.getWriteFd());		
 	if (_cgi.getPidChild() != -1)
-		kill(_cgi.getPidChild(), SIGTERM);
+		kill(_cgi.getPidChild(), SIGTERM);;
 }
 /******************************************************************************/
 
@@ -77,10 +83,11 @@ Client::~Client()
  * CONSTRUCTORS
  ***************/
 
-Client::Client(int fd, WebServ & webServ, std::vector<ServerConf> const &serverInfo)
-	: 	AFileDescriptor(fd, webServ),
-	  	_serverInfo(serverInfo),
-		_responseReady(false)
+Client::Client(int fd, WebServ &webServ, std::vector<ServerConf> const &serverInfo)
+	: AFileDescriptor(fd, webServ),
+	  _startTime(0),
+	  _serverInfo(serverInfo),
+	  _responseReady(false)
 {
 }
 /******************************************************************************/
@@ -108,8 +115,14 @@ ServerConf const &Client::getServerInfo() const
  * @brief Read data in fd and try to construct the request. While request is
  * complete retrive correct server information and update fd to EPOLLOUT
  */
-void	Client::doOnRead()
+void Client::doOnRead()
 {
+	if (_startTime == 0)
+	{
+		_startTime = TimeUtils::getTimeOfDayMs();
+		_webServ->addClient(this);
+	}
+
 	char buffer[BUFFER_SIZE];
 	ssize_t n;
 
@@ -119,7 +132,7 @@ void	Client::doOnRead()
 	if (n < 0) // Try to read next time fd is NON_BLOCK and we can't check errno
 		return;
 	else if (n == 0) // Client close connection
-		_webServ->removeFd(_fd);
+		_webServ->clearFd(_fd);
 	else
 	{
 		try
@@ -138,7 +151,6 @@ void	Client::doOnRead()
 		catch (std::exception &exception)
 		{
 			handleException(exception);
-			_webServ->updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
 			return;
 		}
 		_serverInfoCurr = getCorrectServer();
@@ -146,12 +158,11 @@ void	Client::doOnRead()
 	}
 }
 
-
 /**
  * @brief Try to write response in fd if is ready otherwise create response
  * @param webServ Reference to webServ
  */
-void	Client::doOnWrite()
+void Client::doOnWrite()
 {
 	if (_responseReady)
 	{
@@ -159,22 +170,17 @@ void	Client::doOnWrite()
 
 		// Reset client field for next request
 		_webServ->updateEpoll(_fd, EPOLLIN, EPOLL_CTL_MOD);
+		_webServ->removeClient(_fd);
 		_responseReady = false;
 		_request = Request();
-		if (_cgi.getPidChild() != -1)
-		{
-			_webServ->eraseFd(_cgi.getReadFd());
-			_webServ->eraseFd(_cgi.getWriteFd());
-			_cgi = Cgi();
-		}
+		_cgi = Cgi();
+		_startTime = 0;
 		return;
 	}
 
 	try
 	{
 		handleRequest(getLocationBlock());
-		if (_responseReady)
-			_webServ->updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
 	}
 	catch (std::exception &exception)
 	{
@@ -190,7 +196,7 @@ void	Client::doOnWrite()
 void Client::doOnError(uint32_t event)
 {
 	std::cout << "Client on error, event = " << event << std::endl;
-	_webServ->removeFd(_fd);
+	_webServ->clearFd(_fd);
 }
 
 /**
@@ -203,29 +209,27 @@ void Client::responseCgi(std::string const &response)
 	_rawData.assign(response.begin(), response.end());
 }
 
+void Client::fillRawData(std::vector<unsigned char> const &data)
+{
+	_rawData.assign(data.begin(), data.end());
+}
+
+void Client::readyToRespond()
+{
+	_responseReady = true;
+	_webServ->updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
+}
+
 /******************************************************************************/
 
 /*****************
  * PRIVATE METHODS
  *****************/
 
-void Client::errorResponse(status_code_t status)
-{
-	// TODO: Find error file
-	std::string extension = "html";
-
-	std::string error = Response::errorResponse(status);
-	std::vector<unsigned char> body = std::vector<unsigned char>(error.begin(), error.end());
-
-	resp_t resp = {status, body, extension, _rawData, false};
-	Response::createResponse(resp);
-	_responseReady = true;
-}
-
-void Client::getResponse()
+/* void Client::getResponse()
 {
 	// TODO: Verifier avec le serverConf le path du fichier et son existence OU errorResponse(NOT_FOUND) and change / to index.html
-	//attention de bien prendre le root du bloc location (par defaut meme que serveur , mis a jour s'il existe dans le location bloc)
+	// attention de bien prendre le root du bloc location (par defaut meme que serveur , mis a jour s'il existe dans le location bloc)
 	std::cout << _request;
 
 	std::vector<unsigned char> body;
@@ -242,7 +246,7 @@ void Client::getResponse()
 		is.read(buffer, length);
 		body = std::vector<unsigned char>(buffer, buffer + length);
 		is.close();
-		delete []buffer;
+		delete[] buffer;
 
 		resp_t resp = {OK, body, _request.getExtension(), _rawData, true};
 		Response::createResponse(resp);
@@ -250,9 +254,8 @@ void Client::getResponse()
 	}
 	else
 	{
-		errorResponse(NOT_FOUND);
 	}
-}
+} */
 
 ServerConf Client::getCorrectServer()
 {
@@ -261,7 +264,7 @@ ServerConf Client::getCorrectServer()
 	{
 		std::vector<std::string> serversName = it->getName();
 		std::vector<std::string>::iterator its = serversName.begin();
-		for (;its !=serversName.end();its++)
+		for (; its != serversName.end(); its++)
 		{
 			if (_request.getHeaders().find("Host")->second == *its + ":" + StringUtils::intToString(it->getPort()))
 				return (*it);
@@ -274,39 +277,32 @@ ServerConf Client::getCorrectServer()
 		std::vector<Location>::const_reverse_iterator it2 = it->getLocation().rbegin();
 		for (; it2 != it->getLocation().rend(); it2++)
 		{
-				int result = std::strncmp(
-				(_request.getPathRequest() + "/").c_str(), 
-				it2->getUri().c_str(), 
+			int result = std::strncmp(
+				(_request.getPathRequest() + "/").c_str(),
+				it2->getUri().c_str(),
 				it2->getUri().size());
-				if (result == 0)
-					return (*it); 
+			if (result == 0)
+				return (*it);
 		}
 	}
 	return (*(_serverInfo.begin()));
 }
 
-
-void	Client::handleScript(std::string const & fullPath)
+void Client::handleScript(std::string const &fullPath)
 {
 	_cgi = Cgi(*_webServ, *this, fullPath);
 
 	if (_cgi.run() < 0)
-	{
-		errorResponse(INTERNAL_SERVER_ERROR);
-		_webServ->updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
-		return;
-	}
+		return Response::errorResponse(INTERNAL_SERVER_ERROR, *this);
 
 	_webServ->addFd(_cgi.getWriteFd(), &_cgi);
 	_webServ->updateEpoll(_cgi.getWriteFd(), EPOLLOUT, EPOLL_CTL_ADD);
 
-	// Set NULL at AFileDescriptor in order to avoir double free if error occur
 	_webServ->addFd(_cgi.getReadFd(), &_cgi);
 	_webServ->updateEpoll(_cgi.getReadFd(), 0, EPOLL_CTL_ADD);
 
 	_webServ->updateEpoll(_fd, 0, EPOLL_CTL_MOD);
 }
-
 
 void Client::handleException(std::exception &exception)
 {
@@ -314,14 +310,13 @@ void Client::handleException(std::exception &exception)
 	try
 	{
 		RequestError error = dynamic_cast<RequestError &>(exception);
-		errorResponse(error.getStatusCode());
+		Response::errorResponse(error.getStatusCode(), *this);
 	}
 	catch (std::exception &exception)
 	{
-		errorResponse(INTERNAL_SERVER_ERROR);
+		Response::errorResponse(INTERNAL_SERVER_ERROR, *this);
 	}
 }
-
 
 Location const *Client::getLocationBlock()
 {
@@ -339,7 +334,7 @@ Location const *Client::getLocationBlock()
 	return (NULL);
 }
 
-void	Client::handleRequest(Location const * location)
+void Client::handleRequest(Location const *location)
 {
 	std::string path = _serverInfoCurr.getRoot();
 	std::string request = _request.getPathRequest();
@@ -404,10 +399,27 @@ std::string Client::searchIndexFile(std::string path, std::vector<std::string> c
 	return path;
 }
 
-/*void Client::handlePostRequest(Location *location)
+bool Client::timeoutReached()
 {
+	long long test = TimeUtils::getTimeOfDayMs();
+	bool result = (test - _startTime) > TIMEOUT;
+	if (result)
+	{
+		// Set to -1
+		if (_cgi.getReadFd() != -1)
+		{
+			_webServ->updateEpoll(_cgi.getReadFd(), 0, EPOLL_CTL_DEL);
+			_webServ->removeFd(_cgi.getReadFd());
+			close(_cgi.getReadFd());
+		}
+		if (_cgi.getWriteFd() != -1)
+		{
+			_webServ->updateEpoll(_cgi.getWriteFd(), 0, EPOLL_CTL_DEL);
+			_webServ->removeFd(_cgi.getWriteFd());
+			close(_cgi.getWriteFd());
+		}
+		if (_cgi.getPidChild() != -1)
+			kill(_cgi.getPidChild(), SIGTERM);
+	}
+	return (result);
 }
-
-void Client::handleDeleteRequest(Location *location)
-{
-}*/

@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 18:05:52 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/21 23:25:35 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/25 21:29:38 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -70,29 +70,29 @@ Server::Server(int fd, WebServ & webServ, std::vector<ServerConf> const & server
  */
 void	Server::doOnRead()
 {
-    int		cs;
+    int			clientSocket;
+	Client *	client = NULL;
 
-	if ((cs = accept(_fd, NULL, NULL)) < 0)
+	if ((clientSocket = accept(_fd, NULL, NULL)) < 0)
 	{
 		std::cerr << "Accept error" << std::endl;
 		return ;
 	}
 
-	if (fcntl(cs, F_SETFL, O_NONBLOCK) < 0)
-		throw FileDescriptorError(strerror(errno));
-
 	try
 	{
-		_webServ->updateEpoll(cs, EPOLLIN, EPOLL_CTL_ADD);
+		if (fcntl(clientSocket, F_SETFL, O_NONBLOCK) < 0)
+			throw FileDescriptorError(strerror(errno));
+		_webServ->updateEpoll(clientSocket, EPOLLIN, EPOLL_CTL_ADD);
 	} 
-	catch (EpollInitError & e)
+	catch (std::exception & e)
 	{
-		close(cs);
-		throw e;
+		close(clientSocket);
+		return ;
 	}
 
-	_webServ->addFd(cs, new Client(cs, *_webServ, _serverConfs));
-	_webServ->addClientTimes(std::make_pair(cs, TimeUtils::getTimeOfDayMs()));
+	client = new Client(clientSocket, *_webServ, _serverConfs);
+	_webServ->addFd(clientSocket, client);
 }
 
 
