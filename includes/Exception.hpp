@@ -201,19 +201,21 @@ class RequestError : public std::exception
 {
 	private:
 		status_code_t	_statusCode;
+		std::string		_message;
 
 	public:
-		RequestError(status_code_t statusCode)
-		:	_statusCode(statusCode) {}
+		RequestError(status_code_t statusCode, std::string message)
+		:	_statusCode(statusCode), _message(message) {}
 
 		~RequestError() throw() {};
 
 		char const	*what() const throw()
 		{
-			return HttpUtils::RESPONSE_STATUS.at(_statusCode).c_str();
+			return "Request error";
 		}
 
 		status_code_t	getStatusCode() {return _statusCode;}
+		std::string		getCause() {return HttpUtils::getResponseStatus(_statusCode).second + " (" + _message + ")";}
 };
 
 class FileDescriptorError : public std::exception

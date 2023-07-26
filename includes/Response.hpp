@@ -25,8 +25,10 @@ class Response
         static std::string  bodyHeaders(std::string extension, unsigned int size);
 
     public:
-
+  
         static std::string cgiSimpleResponse(std::string & body);
+   static void cgiResponse(std::vector<unsigned char> & rawData,
+                                std::string headers, std::vector<unsigned char> & body);
         static void errorResponse(status_code_t code, Client & client);
 
 };

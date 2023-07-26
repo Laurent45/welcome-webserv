@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 18:21:33 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/22 20:22:55 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/25 09:33:07 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -147,17 +147,17 @@ void	Request::handleRequestLine(std::vector<unsigned char> & rawData)
 	std::string requestLine(rawData.begin(), it);
 	std::vector<std::string> vec = StringUtils::splitString(requestLine, " ");
 	if (vec.size() != 3)
-		throw RequestError(BAD_REQUEST);
+		throw RequestError(BAD_REQUEST, "Request line is invalid");
 	_httpMethod = vec[0];
 	_pathRequest = vec[1];
 	_httpVersion = vec[2];
 
-	if (HttpUtils::isMethodAllowed(_httpMethod) == false)
-		throw RequestError(METHOD_NOT_ALLOWED);
+	if (_httpMethod != "GET" && _httpMethod != "POST" && _httpMethod != "DELETE")
+		throw RequestError(METHOD_NOT_ALLOWED, "This server doesn't handle this method: " + _httpMethod);
 	if (_httpVersion.compare("HTTP/1.1") != 0)
-		throw RequestError(BAD_REQUEST);
+		throw RequestError(BAD_REQUEST, "The http version must be HTTP/1.1");
 	if (_pathRequest[0] != '/')
-		throw RequestError(BAD_REQUEST);
+		throw RequestError(BAD_REQUEST, "A path request must start with /");
 
 	if (_httpMethod.compare("POST") == 0)
 		_hasMessageBody = true;
@@ -205,13 +205,13 @@ void	Request::handleHeaders(std::vector<unsigned char> & rawData)
 		_headers[key] = value;
 	}
 	if (_headers.find("Host") == _headers.end())
-		throw RequestError(BAD_REQUEST);
+		throw RequestError(BAD_REQUEST, "Host header is mandatory");
 	if (_httpMethod == "POST")
 	{
 		std::map<std::string, std::string>::iterator length = _headers.find("Content-Length");
 		std::map<std::string, std::string>::iterator encod = _headers.find("Transfer-Encoding");
 		if (length == _headers.end() && encod == _headers.end())
-			throw RequestError(BAD_REQUEST);
+			throw RequestError(BAD_REQUEST, "Header about post body is missing");
 		if (_encode == false)
 			_bodySize = atoi(length->second.c_str()); // TODO: Check if size is an integer
 	}

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   StringUtils.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/28 16:08:56 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/28 22:57:11 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/24 00:55:57 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -280,4 +280,20 @@ std::string StringUtils::intToString(int num)
   std::stringstream ss;
   ss << num;
   return ss.str();
+}
+
+void	StringUtils::addCwd(std::string &path)
+{
+	if(!path.compare(0, 2, "./"))
+	{
+		char wd[FILENAME_MAX];
+		if(getcwd(wd, sizeof(wd)) != NULL)
+		{
+			std::string cwd(wd);
+			path = cwd + path.erase(0,1);
+		} 
+		else {
+			std::cerr << "Error getting current directory." << std::endl;
+		}
+	}
 }

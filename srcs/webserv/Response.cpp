@@ -18,27 +18,50 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include <algorithm> // search
+#include <cstring> // strncmp
+#include <cstdlib> // atoi
 
-std::string     Response::cgiSimpleResponse(std::string & body)
+void    Response::cgiResponse(std::vector<unsigned char> & rawData,
+                              std::string headers, std::vector<unsigned char> & body)
 {
-    std::string response = std::string("HTTP/1.1 ") + "200 " + "Ok\r\n";
-    std::stringstream ss;
-    ss << body.size();
-    
-    response += "Server: webserv (Ubuntu)\r\n";
-    response += "Date: Sat, 10, Jun 2023 09:15:38 GMT\r\n";
-    response += "Content-Type: text/html\r\n";
-    response += "Content-Length: " + ss.str() + "\r\n";
-    response += "Connection: keep-alive\r\n\r\n";
-    response += body;
+    int statusCode = 200;
 
-    return (response);
+    std::vector<std::string> lines = StringUtils::splitString(headers, "\r\n");
+    std::string statusLine = lines[0];
+    std::string cmp = "Status: ";
+    if (std::strncmp(cmp.c_str(), statusLine.c_str(), cmp.size()) == 0)
+    {
+        statusCode = std::atoi(statusLine.substr(cmp.size() - 1, 4).c_str());
+        statusCode =  HttpUtils::getResponseStatus(static_cast<status_code_t>(statusCode))
+                        .first;
+        if (statusCode >= 400)
+            throw RequestError(static_cast<status_code_t>(statusCode), "Cgi error response status");
+    }
+    
+    std::string common = Response::commonResponse(static_cast<status_code_t>(statusCode));
+    for (std::vector<std::string>::iterator it = lines.begin(); it != lines.end(); it++)
+    {
+        common.insert(common.end(), it->begin(), it->end());
+        common.push_back('\r');
+        common.push_back('\n');
+    }
+    std::string size = "Content-Length: " + StringUtils::intToString(body.size()) + "\r\n\r\n";
+    common.insert(common.end(), size.begin(), size.end());
+
+    std::vector<unsigned char> response;
+    response.assign(common.begin(), common.end());
+    response.insert(response.end(), body.begin(), body.end());
+    rawData.assign(response.begin(), response.end());
 }
 
 std::string     Response::commonResponse(status_code_t status)
 {
+    std::pair<status_code_t, std::string> statusCode = 
+                                HttpUtils::getResponseStatus(status);
+
     std::string common = std::string("HTTP/1.1 ");
-    common += StringUtils::intToString(status) + " " + HttpUtils::RESPONSE_STATUS.at(status) + "\r\n";
+    common += StringUtils::intToString(statusCode.first) + " " + statusCode.second + "\r\n";
     common += "Server: webserv (Ubuntu)\r\n";
     common += "Date: " + TimeUtils::getFormattedDate(time(NULL)) + "\r\n";
 
@@ -48,7 +71,7 @@ std::string     Response::commonResponse(status_code_t status)
 std::string     Response::bodyHeaders(std::string extension, unsigned int size)
 {
     std::string headers = "";
-    headers += "Content-Type: " + HttpUtils::MIME_TYPES.at(extension) + "\r\n";
+    headers += "Content-Type: " + HttpUtils::getMimeType(extension) + "\r\n";
     headers += "Content-Length: " + StringUtils::intToString(size) + "\r\n";
     return headers;
 }
@@ -75,11 +98,14 @@ std::string     Response::bodyHeaders(std::string extension, unsigned int size)
 
 void    Response::errorResponse(status_code_t code, Client & client) 
 {
-	std::string error = "<html>\n<head><title>" + StringUtils::intToString(code);
-    error += " " + HttpUtils::RESPONSE_STATUS.at(code);
+    std::pair<status_code_t, std::string> statusCode = 
+                                HttpUtils::getResponseStatus(code);
+
+	std::string error = "<html>\n<head><title>" + StringUtils::intToString(statusCode.first);
+    error += " " + statusCode.second;
     error += "</title></head>\n<body>\n<center><h1>";
     error += StringUtils::intToString(code);
-    error += " " + HttpUtils::RESPONSE_STATUS.at(code);
+    error += " " + statusCode.second;
     error += "</h1></center>\n<hr><center>webserv (Ubuntu)</center>\n</body>\n</html>\n";
 
     std::string response = commonResponse(code);
@@ -93,3 +119,20 @@ void    Response::errorResponse(status_code_t code, Client & client)
     client.fillRawData(data);
     client.readyToRespond();
 }
+
+/* 	if (method == "GET")
+	{
+		if (location)
+		{
+			if (std::strncmp(
+					(request + "/").c_str(),
+					location->getUri().c_str(),
+					location->getUri().size()) == 0)
+				fullPath = searchIndexFile(fullPath, location->getIndex(), location->getAutoindex());
+		}
+		else
+		{
+			if (request == "/")
+				fullPath = searchIndexFile(fullPath, _serverInfoCurr.getIndex(), _serverInfoCurr.getAutoindex());
+		}
+	} */

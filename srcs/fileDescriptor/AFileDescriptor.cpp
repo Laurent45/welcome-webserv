@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 15:40:16 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/21 23:04:11 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/23 16:52:30 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,10 +55,5 @@ AFileDescriptor::AFileDescriptor(int fd, WebServ & webServ)
 int AFileDescriptor::getFd() const
 {
 	return (_fd);
-}
-
-void	AFileDescriptor::setFd(int fd)
-{
-	_fd = fd;
 }
 /******************************************************************************/

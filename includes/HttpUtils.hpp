@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/29 21:35:05 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/03 20:06:54 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/25 09:31:53 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -109,6 +109,12 @@ class HttpUtils
 		HttpUtils &operator=(const HttpUtils &copy);
 		~HttpUtils();
 
+		static const std::map<status_code_t, std::string> 	RESPONSE_STATUS;
+		static const std::map<std::string, std::string>		MIME_TYPES;
+
+		static std::map<status_code_t, std::string>	initResponseStatus();
+		static std::map<std::string, std::string> 	initMimeTypes();
+
     public:
 
 		struct method_tab_entry_t 
@@ -127,18 +133,17 @@ class HttpUtils
 			std::string             name;
 		};
 
-		static const std::map<status_code_t, std::string> 	RESPONSE_STATUS;
-		static const std::map<std::string, std::string>		MIME_TYPES;
 		static const method_tab_entry_t						METHODS[];
 		static const request_header_tab_entry_t				REQUEST_HEADERS[];
 		static const answer_header_tab_entry_t				ANSWER_HEADERS[];
 
 
-		static std::map<status_code_t, std::string>	initResponseStatus();
-		static std::map<std::string, std::string> 	initMimeTypes();
 
 		static int 	correctMethodInstruction(std::vector<std::string> token);
-		static bool	isMethodAllowed(std::string method);
+
+		static std::pair<status_code_t, std::string>
+											getResponseStatus(status_code_t statusCode);
+		static std::string	getMimeType(std::string extension);
 };
 
 #endif

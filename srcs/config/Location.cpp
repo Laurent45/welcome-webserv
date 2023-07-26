@@ -3,6 +3,7 @@
 #include "Exception.hpp"
 #include "StringUtils.hpp"
 #include "HttpUtils.hpp"
+#include "FileUtils.hpp"
 
 #include <cstdlib> // atoi
 
@@ -26,27 +27,40 @@ const Location::location_instruction_tab_entry_t	Location::LOCATION_INSTRUCTIONS
 /******************************************************************************/
 
 
-Location::Location(int port, int loc_index, std::map<std::string, std::string> cgi, bool autoindex, std::vector<std::string> index, std::string root, int client_body_size)
+Location::Location(int port, std::map<std::string, std::string> cgi, bool autoindex,
+	std::vector<std::string> index, std::string root, int client_body_size, std::string error_pages)
 	: _port(port),
-	  _loc_index(loc_index),
 	  _locRoot(root),
 	  _index(index),
 	  _cgi(cgi),
 	  _autoindex(autoindex),
-	  _client_body_size(client_body_size)
-{
-	_allow_method.push_back("POST");
-	_allow_method.push_back("GET");
-	_allow_method.push_back("DELETE");
-	_upload_dir = "";
-}
+	  _client_body_size(client_body_size),
+	  _error_pages(error_pages)
+	{
+		_allow_method.push_back("GET");
+		_upload_dir = "";
+	}
+
+Location::Location(int port, std::map<std::string, std::string> cgi, bool autoindex,
+	std::vector<std::string> index, std::string root, int client_body_size, std::string error_pages, std::string uri)
+	: _port(port),
+	  _locRoot(root),
+	  _index(index),
+	  _cgi(cgi),
+	  _autoindex(autoindex),
+	  _client_body_size(client_body_size),
+	  _error_pages(error_pages),
+	  _uri(uri)
+	{
+		_allow_method.push_back("GET");
+		_upload_dir = "";
+	}
 
 Location::Location()
 {}
 
 Location::Location(const Location &src)
 	: _port(src._port),
-	  _loc_index(src._loc_index),
 	  _locRoot(src._locRoot),
 	  _allow_method(src._allow_method),
 	  _index(src._index),
@@ -64,7 +78,6 @@ Location &Location::operator=(const Location &src)
 	if (this != &src)
 	{
 		_port = src._port;
-		_loc_index = src._loc_index;
 		_locRoot = src._locRoot;
 		_allow_method = src._allow_method;
 		_index = src._index;
@@ -85,7 +98,6 @@ Location::~Location() {}
 /*
 ** Location getters
 */
-int const &Location::getLocIndex() const { return (_loc_index); }
 int const &Location::getPort() const { return (_port); }
 std::string const &Location::getUri() const { return _uri; }
 bool const &Location::getAutoindex() const { return _autoindex; }
@@ -98,12 +110,14 @@ std::map<std::string, std::string> const &Location::getCgi() const { return _cgi
 long int const &Location::getClientBodySize() const { return (_client_body_size); }
 std::string const &Location::getError() const { return (_error_pages); }
 
-void Location::setLocation(const std::string &str, int &count)
+void Location::setLocation(const std::string &str, int &count, int &flag)
 {
 	std::string line = StringUtils::getLine(str, count);
 	std::vector<std::string> token;
 	token = StringUtils::splitString(line, WHITESPACES);
 	setUri(token);
+	if (!_uri.compare("/"))
+		flag = 1;
 	count++;
 	if (StringUtils::getLine(str, count).compare("{"))
 		throw(ConfFileParseError("Invalid Location directive : no opening {"));
@@ -150,7 +164,7 @@ void Location::parseLocation(std::string &line)
 	else if (instruct == TOTAL_LOCATION_INSTRUCTIONS)
 		return;
 	else
-		throw(ConfFileParseError("Wrong input in Location bloc [" + StringUtils::intToString(_loc_index) + "] : Directive " + token[0] + " invalid"));
+		throw(ConfFileParseError("Wrong input in Location bloc : Directive " + token[0] + " invalid"));
 }
 
 /*
@@ -162,6 +176,8 @@ void Location::setUri(std::vector<std::string> token)
 		throw(ConfFileParseError("Invalid Location directive : not enough arguments"));
 	else if (token.size() == 2)	{
 		_uri = token[1];
+	if (_uri[0] != '/')
+		_uri="/" + _uri;//TODO verifier si on veut en rajouter un ou lever exception si le premier n'est pas /
 	if (_uri[_uri.size() - 1] != '/')
 		_uri+="/";
 	}
@@ -173,13 +189,12 @@ void Location::setUri(std::vector<std::string> token)
 void Location::setAutoindex(std::vector<std::string> token)
 {
 	if (token.size() != 2 || !(token[1].compare("on") || token[1].compare("off")))
-		throw(ConfFileParseError("Location bloc [" + StringUtils::intToString(_loc_index) + "] : problem with autoindex argument, on or off only"));
+		throw(ConfFileParseError("Location bloc : problem with autoindex argument, on or off only"));
 	switch (token[1].erase(token[1].size() - 1).compare("on"))
 	{
 	case 0:
 		_autoindex = true;
 		break;
-
 	default:
 		_autoindex = false;
 		break;
@@ -190,7 +205,7 @@ void Location::setIndex(std::vector<std::string> token)
 	_index.clear();
 	size_t i = 1;
 	if (token.size() < 2)
-		throw(ConfFileParseError("Location bloc [" + StringUtils::intToString(_loc_index) + "] : problem with number of arguments for index"));
+		throw(ConfFileParseError("Location bloc : problem with number of arguments for index"));
 	for (; i < token.size(); i++)
 	{
 		if (token[i].compare(" "))
@@ -206,7 +221,7 @@ void Location::setAllowMethod(std::vector<std::string> token)
 {
 	_allow_method.clear();
 	if (HttpUtils::correctMethodInstruction(token) == -1)
-		throw(ConfFileParseError("Location bloc [" + StringUtils::intToString(_loc_index) + "] : Method not allowed"));
+		throw(ConfFileParseError("Location bloc : Method not allowed"));
 	size_t i = 1;
 	for (; i < token.size() - 1; i++)
 		_allow_method.push_back(token[i]);
@@ -216,8 +231,9 @@ void Location::setAllowMethod(std::vector<std::string> token)
 void Location::setLocRoot(std::vector<std::string> token)
 {
 	if (token.size() > 2)
-		throw(ConfFileParseError("Location bloc [" + StringUtils::intToString(_loc_index) + "] : Only one root allowed"));
+		throw(ConfFileParseError("Location bloc : Only one root allowed"));
 	_locRoot = token[1].erase(token[1].size() - 1);
+	StringUtils::addCwd(_locRoot);
 }
 
 void Location::setUploadDir(std::vector<std::string> token)
@@ -225,32 +241,32 @@ void Location::setUploadDir(std::vector<std::string> token)
 	_upload_dir = "";
 	size_t i = 1;
 	if (token.size() > 2)
-		throw(ConfFileParseError("Location bloc [" + StringUtils::intToString(_loc_index) + "] : problem with number of arguments for upload dir"));
+		throw(ConfFileParseError("Location bloc : problem with number of arguments for upload dir"));
 	_upload_dir += token[i].erase(token[i].size() - 1);
+	StringUtils::addCwd(_upload_dir);
+	if (!FileUtils::folderExistsAndWritable(_upload_dir.c_str()))
+		throw(ConfFileParseError("Location bloc : Upload dir not accessible"));
+
 }
+
 void Location::setCgi(std::vector<std::string> token)
 {
 	if (token.size() != 3)
-		throw(ConfFileParseError("Location bloc [" + StringUtils::intToString(_loc_index) + "] : cgi argument problem"));
+		throw(ConfFileParseError("Location bloc : cgi argument problem"));
 	_cgi.clear();
 	_cgi.insert(std::pair<std::string, std::string>(token[1], token[2].erase(token[2].size() - 1)));
 }
 void Location::setErrorPages(std::vector<std::string> token)
 {
-
-	if (token.size() != 3)
-		throw(ConfFileParseError("Location bloc [" + StringUtils::intToString(_loc_index) + "] : problem with number of arguments for error_page"));
-	for (size_t i = 0; i < token[1].size(); i++)
-		if (token[1][i] < 48 && token[1][i] > 57)
-			throw(ConfFileParseError("Location bloc [" + StringUtils::intToString(_loc_index) + "] : error_page : fisrt argument must be numeric"));
-	if (atoi(token[1].c_str()) < 300 && atoi(token[1].c_str()) > 599)
-		throw(ConfFileParseError("Location bloc [" + StringUtils::intToString(_loc_index) + "] : error_page : fisrt argument must be between 300 and 599"));
-	_error_pages = token[1] + " " + token[2].erase(token[2].size() - 1);
+	if (token.size() != 2)
+		throw(ConfFileParseError("Location bloc : problem with number of arguments for error_page"));
+	_error_pages = token[1].erase(token[1].size() - 1);
+	StringUtils::addCwd(_error_pages);
 }
 void Location::setClientBodySize(std::vector<std::string> token)
 {
 	if (token.size() > 2)
-		throw(ConfFileParseError("Location bloc [" + StringUtils::intToString(_loc_index) + "] : Only one client body size max"));
+		throw(ConfFileParseError("Location bloc : Only one client body size max"));
 	std::string str = token[1].erase(token[1].size() - 1);
 	size_t i = 0;
 	while (i < str.length() && (std::isspace(str[i]) || std::isdigit(str[i])))
@@ -273,12 +289,12 @@ void Location::setReturn(std::vector<std::string> token)
 	if (token.size() == 2)
 		_return = token[1].erase(token[1].size() - 1);
 	if (token.size() != 3)
-		throw(ConfFileParseError("Location bloc [" + StringUtils::intToString(_loc_index) + "] : problem with number of arguments for return"));
+		throw(ConfFileParseError("Location bloc : problem with number of arguments for return"));
 	for (size_t i = 0; i < token[1].size(); i++)
 		if (token[1][i] < 48 && token[1][i] > 57)
-			throw(ConfFileParseError("Location bloc [" + StringUtils::intToString(_loc_index) + "] : _redirect : fisrt argument must be numeric"));
+			throw(ConfFileParseError("Location bloc : _redirect : fisrt argument must be numeric"));
 	if (atoi(token[1].c_str()) < 300 && atoi(token[1].c_str()) > 599)
-		throw(ConfFileParseError("Location bloc [" + StringUtils::intToString(_loc_index) + "] : _redirect : fisrt argument must be between 300 and 599"));
+		throw(ConfFileParseError("Location bloc : _redirect : fisrt argument must be between 300 and 599"));
 	_return = token[1] + " " + token[2].erase(token[2].size() - 1);
 }
 
@@ -306,7 +322,7 @@ int		Location::correctLocationInstruction(std::vector<std::string> token)
 
 std::ostream &operator<<(std::ostream &o, Location const &i)
 {
-	o << "************* Location bloc number [" << i.getLocIndex() << "] *************" << std::endl;
+	o << "************* Location bloc  *************" << std::endl;
 	if (i.getUri().empty() == false)
 		o << "    uri				=	[" << i.getUri() << "] :" << std::endl;
 	o << "    portNumber			=	[" << i.getPort() << "]" << std::endl;

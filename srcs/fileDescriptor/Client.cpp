@@ -148,11 +148,12 @@ void Client::doOnRead()
 		{
 			return;
 		}
-		catch (std::exception &exception)
+		catch (std::exception const &exception)
 		{
 			handleException(exception);
 			return;
 		}
+		DEBUG_COUT(_request.getHttpMethod() + " " << _request.getPathRequest());
 		_serverInfoCurr = getCorrectServer();
 		_webServ->updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
 	}
@@ -203,11 +204,12 @@ void Client::doOnError(uint32_t event)
  * @brief
  * @param response
  */
-void Client::responseCgi(std::string const &response)
+void Client::responseCgi(std::vector<unsigned char> const & cgiRawData)
 {
 	_responseReady = true;
-	_rawData.assign(response.begin(), response.end());
+	_rawData.assign(cgiRawData.begin(), cgiRawData.end());
 }
+
 
 void Client::fillRawData(std::vector<unsigned char> const &data)
 {
@@ -219,7 +221,6 @@ void Client::readyToRespond()
 	_responseReady = true;
 	_webServ->updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
 }
-
 /******************************************************************************/
 
 /*****************
@@ -277,12 +278,10 @@ ServerConf Client::getCorrectServer()
 		std::vector<Location>::const_reverse_iterator it2 = it->getLocation().rbegin();
 		for (; it2 != it->getLocation().rend(); it2++)
 		{
-			int result = std::strncmp(
-				(_request.getPathRequest() + "/").c_str(),
-				it2->getUri().c_str(),
-				it2->getUri().size());
-			if (result == 0)
-				return (*it);
+			int result = std::strncmp((_request.getPathRequest() + "/").c_str(), 
+				it2->getUri().c_str(), it2->getUri().size());
+				if (result == 0)
+					return (*it); 
 		}
 	}
 	return (*(_serverInfo.begin()));
@@ -304,6 +303,7 @@ void Client::handleScript(std::string const &fullPath)
 	_webServ->updateEpoll(_fd, 0, EPOLL_CTL_MOD);
 }
 
+
 void Client::handleException(std::exception &exception)
 {
 	DEBUG_COUT(exception.what());
@@ -318,21 +318,21 @@ void Client::handleException(std::exception &exception)
 	}
 }
 
+
 Location const *Client::getLocationBlock()
 {
 	std::vector<Location>::const_reverse_iterator it = _serverInfoCurr.getLocation().rbegin();
 
 	for (; it != _serverInfoCurr.getLocation().rend(); it++)
 	{
-		int result = std::strncmp(
-			(_request.getPathRequest() + "/").c_str(),
-			it->getUri().c_str(),
-			it->getUri().size());
+		int result = std::strncmp((_request.getPathRequest() + "/").c_str(), 
+									it->getUri().c_str(), it->getUri().size());
 		if (result == 0)
 			return &(*it);
 	}
 	return (NULL);
 }
+
 
 void Client::handleRequest(Location const *location)
 {
@@ -349,29 +349,12 @@ void Client::handleRequest(Location const *location)
 		methods = location->getAllowMethod();
 
 	if (!methods.empty() && std::find(methods.begin(), methods.end(), method) == methods.end())
-		throw RequestError(METHOD_NOT_ALLOWED);
-
-	if (method == "GET")
-	{
-		if (location)
-		{
-			if (std::strncmp(
-					(request + "/").c_str(),
-					location->getUri().c_str(),
-					location->getUri().size()) == 0)
-				fullPath = searchIndexFile(fullPath, location->getIndex(), location->getAutoindex());
-		}
-		else
-		{
-			if (request == "/")
-				fullPath = searchIndexFile(fullPath, _serverInfoCurr.getIndex(), _serverInfoCurr.getAutoindex());
-		}
-	}
+		throw RequestError(METHOD_NOT_ALLOWED, "Method " + method + "is not allowed");
 
 	size_t point = fullPath.rfind(".");
 	if (point != std::string::npos && fullPath.substr(point + 1) == "php")
 		return handleScript(fullPath);
-	throw RequestError(METHOD_NOT_ALLOWED);
+	throw RequestError(METHOD_NOT_ALLOWED, "Should implement GET POST DELETE");
 	/*if (method == "GET")
 		return Response::getResponse(autoindex);
 	if (method == "POST")
@@ -379,6 +362,7 @@ void Client::handleRequest(Location const *location)
 	if (method == "DELETE")
 		return Response::deleteResponse();*/
 }
+
 
 std::string Client::searchIndexFile(std::string path, std::vector<std::string> const &indexs, bool autoindex)
 {
@@ -388,24 +372,23 @@ std::string Client::searchIndexFile(std::string path, std::vector<std::string> c
 		if (!FileUtils::fileExists((path + "/" + *it).c_str()))
 			continue;
 		if (!FileUtils::fileRead((path + *it).c_str()))
-			throw RequestError(FORBIDDEN);
+			throw RequestError(FORBIDDEN, "File cannot read");
 		else
 			return path + *it;
 	}
 
 	// otherwise check if autoindex is on
 	if (!autoindex)
-		throw RequestError(FORBIDDEN);
+		throw RequestError(FORBIDDEN, "Autoindex is off");
 	return path;
 }
 
 bool Client::timeoutReached()
 {
-	long long test = TimeUtils::getTimeOfDayMs();
-	bool result = (test - _startTime) > TIMEOUT;
+	bool result = (TimeUtils::getTimeOfDayMs() - _startTime) > TIMEOUT;
 	if (result)
 	{
-		// Set to -1
+		// TODO: Set to -1
 		if (_cgi.getReadFd() != -1)
 		{
 			_webServ->updateEpoll(_cgi.getReadFd(), 0, EPOLL_CTL_DEL);
