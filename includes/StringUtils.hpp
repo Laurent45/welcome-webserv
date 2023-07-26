@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   StringUtils.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/28 16:27:42 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/29 23:05:42 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/24 00:40:09 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,10 @@
 
 #include <string>
 #include <ostream>
+#include <iostream>
+#include <cstdio>
 #include <vector>
+#include <unistd.h>
 
 #define WHITESPACES " \n\r\t\f\v"
 
@@ -41,6 +44,7 @@ class StringUtils
 		static int						findClosingBracket(std::string str);
 		static std::vector<std::string> splitString(std::string str, const std::string &charset = " ");
 		static std::string				intToString(int num);
+		static void						addCwd(std::string &path);	
 };
 
 template < class T >

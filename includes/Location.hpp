@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/23 18:18:12 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/21 15:00:59 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/25 12:37:14 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <sys/stat.h>
 
 enum location_instruction_t {
 	L_ROOT,
@@ -36,7 +37,6 @@ class Location
 
 	private:
 		int									_port;
-		int									_loc_index;
 		std::string							_locRoot;
 		std::vector<std::string>			_allow_method;
 		std::vector<std::string>			_index;
@@ -72,10 +72,12 @@ class Location
 		Location &operator=(const Location &copy);
 		~Location();
 
-		Location(int port, int loc_index, std::map<std::string, std::string>	cgi, bool autoindex,
-			std::vector<std::string> index, std::string locRoot, int client_body_size);
+		Location(int port, std::map<std::string, std::string>	cgi, bool autoindex,
+			std::vector<std::string> index, std::string locRoot, int client_body_size, std::string error_pages);
+		Location(int port, std::map<std::string, std::string>	cgi, bool autoindex,
+			std::vector<std::string> index, std::string locRoot, int client_body_size, std::string error_pages, std::string uri);
 
-		void	setLocation(const std::string &str,  int &count);
+		void	setLocation(const std::string &str,  int &count, int &flag);
 		void	parseLocation(std::string &line);
 
 		/*

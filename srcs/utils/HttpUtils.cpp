@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpUtils.cpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/29 21:37:33 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/25 10:09:55 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/25 17:46:22 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -214,19 +214,23 @@ int		HttpUtils::correctMethodInstruction(std::vector<std::string> token)
 {
 	size_t i = 0;
 	size_t j = 1;
+	int valid;
 	token[token.size() - 1] = token[token.size() - 1].erase(token[token.size() - 1].size() - 1);
 	while (j < token.size())
 	{
 		i = 0;
+		valid = 0;
 		while (i < TOTAL_METHODS_INSTRUCTIONS)
 		{
 			if (!token[j].compare(HttpUtils::METHODS[i].name))
-				return j;
+				valid = 1;
 			i++;
 		}
+		if (valid == 0)
+			return (-1);
 		j++;
 	}
-	return -1;
+	return 1;
 }
 
 

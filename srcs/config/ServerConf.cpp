@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/23 18:24:01 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/20 18:41:04 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/07/25 12:13:27 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,6 +24,8 @@
 #include <cstring>		// bzero
 #include <sys/epoll.h>	// epoll_ctl
 #include <algorithm>
+#include <fstream>
+#include <sstream>
 
 
 /************************
@@ -53,6 +55,7 @@ ServerConf::ServerConf(void)
 	  _port(8080),
 	  _server_name(),
 	  _IP("0.0.0.0"),
+	  _error_pages("error.html"),
 	  _autoindex(false),
 	  _client_body_size(1000000)
 {
@@ -118,6 +121,7 @@ void ServerConf::setRoot(std::vector<std::string> token)
 	if (token.size() > 2)
 		throw(ConfFileParseError("Only one root allowed"));
 	_root = token[1].erase(token[1].size() - 1);
+	StringUtils::addCwd(_root);
 }
 
 void ServerConf::setCgi(std::vector<std::string> token)
@@ -189,14 +193,10 @@ void ServerConf::setName(std::vector<std::string> token)
 
 void ServerConf::setError(std::vector<std::string> token)
 {
-	if (token.size() != 3)
+	if (token.size() != 2)
 		throw(ConfFileParseError("problem with number of arguments for error_page"));
-	for (size_t i = 0; i < token[1].size(); i++)
-		if (token[1][i] < 48 && token[1][i] > 57)
-			throw(ConfFileParseError("error_page : fisrt argument must be numeric"));
-	if (atoi(token[1].c_str()) < 300 && atoi(token[1].c_str()) > 599)
-		throw(ConfFileParseError("error_page : fisrt argument must be between 300 and 599"));
-	_error_pages = token[1] + " " + token[2].erase(token[2].size() - 1);
+	_error_pages = token[1].erase(token[1].size() - 1);
+	StringUtils::addCwd(_error_pages);
 }
 
 void ServerConf::setIndex(std::vector<std::string> token)
@@ -253,6 +253,35 @@ void ServerConf::setClientBodySize(std::vector<std::string> token)
 		_client_body_size *= 1000;
 }
 
+void	ServerConf::setErrorContent(std::string const path){
+	std::ifstream fileStream(path.c_str()); 
+	if (fileStream) {
+		std::stringstream buffer;
+		buffer << fileStream.rdbuf();
+		_errorContent = buffer.str();
+		fileStream.close();
+	} else {
+	throw std::runtime_error("Impossible d'ouvrir le fichier : " + path);
+	}
+}
+
+void 	ServerConf::setFolderContent(std::string const path){
+	std::ifstream fileStream(path.c_str()); 
+	if (fileStream) {
+		std::stringstream buffer;
+		buffer << fileStream.rdbuf();
+		_folderContent = buffer.str();
+		fileStream.close();
+	} 
+	else {
+	throw std::runtime_error("Impossible d'ouvrir le fichier : " + path);
+	}
+}
+
+
+
+
+
 /******************************************************************************/
 
 /****************
@@ -306,7 +335,6 @@ void ServerConf::setServerConf(const std::string &str)
 {
 	int count = 0;
 	int pos_end = StringUtils::findClosingBracket(str);
-	int location_ct = 0;
 	// DEBUG_COUT("\n****ServerConf to parse without line ServerConf {  \n\n" + str);
 	while (count < pos_end)
 	{
@@ -314,12 +342,28 @@ void ServerConf::setServerConf(const std::string &str)
 		count++;
 	}
 	count = 0;
+	int flag = 0;
 	while (count < pos_end)
 	{
 		if (getLocationBloc(str, count) == -1)
 			count++;
 		else
-			addLocation(str, count, ++location_ct);
+			addLocation(str, count, flag);
+	}
+	if (!flag){
+		Location loc(getPort(), getCgi(), getAutoindex(), getIndex(), getRoot(), getClientBodySize(), getError(), "/");
+		this->_location.push_back(loc);
+	} //cree un location bloc / si inexistant
+	setErrorContent(getError());
+
+	char wd[FILENAME_MAX];
+	if(getcwd(wd, sizeof(wd)) != NULL)
+	{
+		std::string cwd(wd);
+		std::string str2(cwd + "/folder.html");
+		setFolderContent(str2);}
+		else {
+			std::cerr << "Error getting current directory." << std::endl;	
 	}
 }
 
@@ -329,10 +373,10 @@ void ServerConf::setServerConf(const std::string &str)
  * @param count 
  * @param Server_ct 
  */
-void ServerConf::addLocation(std::string str, int &count, int &Server_ct)
+void ServerConf::addLocation(std::string str, int &count, int &flag)
 {
-	Location loc(getPort(), Server_ct, getCgi(), getAutoindex(), getIndex(), getRoot(), getClientBodySize());
-	loc.setLocation(str, count);
+	Location loc(getPort(), getCgi(), getAutoindex(), getIndex(), getRoot(), getClientBodySize(), getError());
+	loc.setLocation(str, count, flag);
 	this->_location.push_back(loc);
 }
 /******************************************************************************/

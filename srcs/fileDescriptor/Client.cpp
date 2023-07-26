@@ -281,7 +281,7 @@ ServerConf Client::getCorrectServer()
 		std::vector<std::string>::iterator its = serversName.begin();
 		for (;its !=serversName.end();its++)
 		{
-			if (_request.getHeaders().find("Host")->second == *its)
+			if (_request.getHeaders().find("Host")->second == *its + ":" + StringUtils::intToString(it->getPort()))
 				return (*it);
 		}
 	}

@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/23 18:12:31 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/20 18:09:01 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/07/25 02:33:33 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,6 +47,8 @@ class ServerConf
 		long int							_client_body_size;
 		std::map<std::string, std::string>	_cgi;
 		std::vector<Location>				_location;
+		std::string							_errorContent;
+		std::string							_folderContent;
 
 
 		void	setCgi(std::vector<std::string> token);
@@ -55,6 +57,8 @@ class ServerConf
 		void	setIp(std::vector<std::string> token);
 		void	setIndex(std::vector<std::string> token);
 		void	setAutoindex(std::vector<std::string> token);
+		void	setErrorContent(std::string  const path);
+		void 	setFolderContent(std::string const path);
 		
 		void	setError(std::vector<std::string> token);
 		void	setClientBodySize(std::vector<std::string> token);
@@ -88,9 +92,11 @@ class ServerConf
 		long int					const &getClientBodySize() const;
 		std::vector<Location>		const &getLocation() const;
 		std::map<std::string, std::string>	const &getCgi() const;
+		std::string 				const &getErrorContent() const;
+		std::string 				const &getFolderContent() const;
 
 		void	setServerConf(const std::string &str);
-		void	addLocation(std::string str, int &count, int &ServerConf_ct);
+		void	addLocation(std::string str, int &count, int &flag);
 		void 	cleanDupServerConf(std::vector<ServerConf> ServerConfInfo);
 		void	sortLocationBlock();
 		void	setName(std::vector<std::string> token);
