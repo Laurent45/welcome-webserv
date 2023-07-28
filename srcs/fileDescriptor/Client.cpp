@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/26 17:56:30 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/28 10:43:47 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,7 +27,6 @@
 #include <fstream>
 #include <sys/socket.h> // recv
 #include <algorithm>	// search
-#include <csignal>		// kill
 
 /*****************
  * CANNONICAL FORM
@@ -42,8 +41,8 @@ Client::Client(Client const &copy)
 	: AFileDescriptor(copy),
 	  _startTime(copy._startTime),
 	  _rawData(copy._rawData),
-	  _serverInfo(copy._serverInfo),
-	  _serverInfoCurr(copy._serverInfoCurr),
+	  _server(copy._server),
+	  _serverConf(copy._serverConf),
 	  _request(copy._request),
 	  _responseReady(copy._responseReady),
 	  _cgi(copy._cgi)
@@ -58,8 +57,8 @@ Client &Client::operator=(Client const &rhs)
 		_webServ = rhs._webServ;
 		_startTime = rhs._startTime;
 		_rawData = rhs._rawData;
-		_serverInfo = rhs._serverInfo;
-		_serverInfoCurr = rhs._serverInfoCurr;
+		_server = rhs._server;
+		_serverConf = rhs._serverConf;
 		_request = rhs._request;
 		_responseReady = rhs._responseReady;
 		_cgi = rhs._cgi;
@@ -81,10 +80,10 @@ Client::~Client()
  * CONSTRUCTORS
  ***************/
 
-Client::Client(int fd, WebServ &webServ, std::vector<ServerConf> const &serverInfo)
+Client::Client(int fd, WebServ &webServ, Server const * server) 
 	: AFileDescriptor(fd, webServ),
 	  _startTime(0),
-	  _serverInfo(serverInfo),
+	  _server(server),
 	  _responseReady(false)
 {
 }
@@ -99,9 +98,9 @@ Request const &Client::getRequest() const
 	return (this->_request);
 }
 
-ServerConf const &Client::getServerInfo() const
+ServerConf const &Client::getServerConf() const
 {
-	return (this->_serverInfoCurr);
+	return (this->_serverConf);
 }
 /******************************************************************************/
 
@@ -152,7 +151,7 @@ void Client::doOnRead()
 			return;
 		}
 		DEBUG_COUT(_request.getHttpMethod() + " " << _request.getPathRequest());
-		_serverInfoCurr = getCorrectServer();
+		_serverConf = getCorrectServerConf();
 		_webServ->updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
 	}
 }
@@ -264,10 +263,10 @@ bool Client::timeoutReached()
  * PRIVATE METHODS
  *****************/
 
-ServerConf const &		 Client::getCorrectServer()
+ServerConf const &		 Client::getCorrectServerConf()
 {
-	std::vector<ServerConf>::iterator it = _serverInfo.begin();
-	for (; it != _serverInfo.end(); it++)
+	std::vector<ServerConf>::const_iterator it = _server->getServerConfs().begin();
+	for (; it != _server->getServerConfs().end(); it++)
 	{
 		std::vector<std::string> serversName = it->getName();
 		std::vector<std::string>::iterator its = serversName.begin();
@@ -278,8 +277,8 @@ ServerConf const &		 Client::getCorrectServer()
 		}
 	}
 
-	it = _serverInfo.begin();
-	for (; it != _serverInfo.end(); it++)
+	it = _server->getServerConfs().begin();
+	for (; it != _server->getServerConfs().end(); it++)
 	{
 		std::vector<Location>::const_reverse_iterator it2 = it->getLocation().rbegin();
 		for (; it2 != it->getLocation().rend(); it2++)
@@ -290,7 +289,7 @@ ServerConf const &		 Client::getCorrectServer()
 					return (*it); 
 		}
 	}
-	return (*(_serverInfo.begin()));
+	return (*(_server->getServerConfs().begin()));
 }
 
 
@@ -313,9 +312,9 @@ void		Client::handleScript(std::string const & fullPath)
 
 Location const &	Client::getLocationBlock()
 {
-	std::vector<Location>::const_reverse_iterator it = _serverInfoCurr.getLocation().rbegin();
+	std::vector<Location>::const_reverse_iterator it = _serverConf.getLocation().rbegin();
 
-	for (; it != _serverInfoCurr.getLocation().rend(); it++)
+	for (; it != _serverConf.getLocation().rend(); it++)
 	{
 		int result = std::strncmp((_request.getPathRequest() + "/").c_str(), 
 									it->getUri().c_str(), it->getUri().size());

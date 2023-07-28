@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 18:05:52 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/25 21:29:38 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/28 10:22:02 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 #include "TimeUtils.hpp"
 #include "Client.hpp"
 #include "WebServ.hpp"
+#include "Debugger.hpp"
 
 #include <unistd.h>		// close
 #include <sys/socket.h> // accept
@@ -60,6 +61,16 @@ Server::Server(int fd, WebServ & webServ, std::vector<ServerConf> const & server
 {}
 /******************************************************************************/
 
+/************
+ * ACCESSORS
+ ************/
+
+std::vector<ServerConf> const & Server::getServerConfs() const
+{
+	return _serverConfs;
+}
+/******************************************************************************/
+
 /****************
  * PUBLIC METHODS
  ****************/
@@ -75,7 +86,7 @@ void	Server::doOnRead()
 
 	if ((clientSocket = accept(_fd, NULL, NULL)) < 0)
 	{
-		std::cerr << "Accept error" << std::endl;
+		DEBUG_COUT("Impossible to handle client request because accept failed");
 		return ;
 	}
 
@@ -91,7 +102,7 @@ void	Server::doOnRead()
 		return ;
 	}
 
-	client = new Client(clientSocket, *_webServ, _serverConfs);
+	client = new Client(clientSocket, *_webServ, this);
 	_webServ->addFd(clientSocket, client);
 }
 

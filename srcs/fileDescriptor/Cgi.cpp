@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 23:51:46 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/26 20:11:55 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/28 10:51:01 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -253,7 +253,7 @@ void Cgi::runChildProcess(int pipeToCgi[2], int pipeFromCgi[2])
     char *cgiPathCopy = NULL;
     char *scriptCopy = NULL;
 
-    std::string cgiPath = _clientInfo->getServerInfo().getCgi().find("php")->second;
+    std::string cgiPath = _clientInfo->getServerConf().getCgi().find("php")->second;
     cgiPathCopy = new char[cgiPath.size() + 1];
     strcpy(cgiPathCopy, cgiPath.c_str());
 
@@ -290,7 +290,7 @@ void Cgi::runChildProcess(int pipeToCgi[2], int pipeFromCgi[2])
 
 char **Cgi::mapCgiParams()
 {
-    ServerConf const &serverInfo = _clientInfo->getServerInfo();
+    ServerConf const &serverInfo = _clientInfo->getServerConf();
     Request const &request = _clientInfo->getRequest();
     std::map<std::string, std::string> const &headers = request.getHeaders();
 
