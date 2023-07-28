@@ -27,7 +27,7 @@ class Client : public AFileDescriptor
 	private:
 		long long						_startTime;
 		std::vector<unsigned char>		_rawData;
-		Server const *					_server;
+		Server const * const			_server;
 		ServerConf const * 				_serverConf; 
 		Location const *				_location;
 		Request							_request;

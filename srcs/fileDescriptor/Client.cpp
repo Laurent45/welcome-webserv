@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/28 11:34:59 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/28 11:43:53 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,7 +62,6 @@ Client &Client::operator=(Client const &rhs)
 		_webServ = rhs._webServ;
 		_startTime = rhs._startTime;
 		_rawData = rhs._rawData;
-		_server = rhs._server;
 		_serverConf = rhs._serverConf;
 		_request = rhs._request;
 		_correctPathRequest = rhs._correctPathRequest;
@@ -182,7 +181,6 @@ void Client::doOnWrite()
 		_correctPathRequest = "";
 		_cgi = Cgi();
 		_startTime = 0;
-		_server = NULL;
 		_serverConf = NULL;
 		_location = NULL;
 		return;
