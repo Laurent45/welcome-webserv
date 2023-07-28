@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/28 10:43:47 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/28 11:34:59 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,7 +33,11 @@
  *****************/
 
 Client::Client(void)
-	: AFileDescriptor(), _responseReady(false)
+	: AFileDescriptor(), 
+	  _server(NULL),
+	  _serverConf(NULL),
+	  _location(NULL),
+	  _responseReady(false)
 {
 }
 
@@ -44,6 +48,7 @@ Client::Client(Client const &copy)
 	  _server(copy._server),
 	  _serverConf(copy._serverConf),
 	  _request(copy._request),
+	  _correctPathRequest(copy._correctPathRequest),
 	  _responseReady(copy._responseReady),
 	  _cgi(copy._cgi)
 {
@@ -60,6 +65,7 @@ Client &Client::operator=(Client const &rhs)
 		_server = rhs._server;
 		_serverConf = rhs._serverConf;
 		_request = rhs._request;
+		_correctPathRequest = rhs._correctPathRequest;
 		_responseReady = rhs._responseReady;
 		_cgi = rhs._cgi;
 	}
@@ -84,6 +90,8 @@ Client::Client(int fd, WebServ &webServ, Server const * server)
 	: AFileDescriptor(fd, webServ),
 	  _startTime(0),
 	  _server(server),
+	  _serverConf(NULL),
+	  _location(NULL),
 	  _responseReady(false)
 {
 }
@@ -98,7 +106,7 @@ Request const &Client::getRequest() const
 	return (this->_request);
 }
 
-ServerConf const &Client::getServerConf() const
+ServerConf const * Client::getServerConf() const
 {
 	return (this->_serverConf);
 }
@@ -171,14 +179,29 @@ void Client::doOnWrite()
 		_webServ->removeClient(_fd);
 		_responseReady = false;
 		_request = Request();
+		_correctPathRequest = "";
 		_cgi = Cgi();
 		_startTime = 0;
+		_server = NULL;
+		_serverConf = NULL;
+		_location = NULL;
 		return;
 	}
 
 	try
 	{
-		handleRequest();
+		getCorrectLocationBlock();
+		getCorrectPathRequest();
+		size_t point = _correctPathRequest.rfind(".");
+		if (point != std::string::npos && _correctPathRequest.substr(point + 1) == "php")
+			return handleScript(_correctPathRequest);
+		throw RequestError(METHOD_NOT_ALLOWED, "Should implement GET POST DELETE");
+		/*if (method == "GET")
+			return Response::getResponse(autoindex);
+		if (method == "POST")
+			return Response::postResponse(uploadDir);
+		if (method == "DELETE")
+			return Response::deleteResponse();*/
 	}
 	catch (std::exception &exception)
 	{
@@ -263,7 +286,7 @@ bool Client::timeoutReached()
  * PRIVATE METHODS
  *****************/
 
-ServerConf const &		 Client::getCorrectServerConf()
+ServerConf const *		 Client::getCorrectServerConf()
 {
 	std::vector<ServerConf>::const_iterator it = _server->getServerConfs().begin();
 	for (; it != _server->getServerConfs().end(); it++)
@@ -273,7 +296,7 @@ ServerConf const &		 Client::getCorrectServerConf()
 		for (; its != serversName.end(); its++)
 		{
 			if (_request.getHeaders().find("Host")->second == *its + ":" + StringUtils::intToString(it->getPort()))
-				return (*it);
+				return (&(*it));
 		}
 	}
 
@@ -286,10 +309,10 @@ ServerConf const &		 Client::getCorrectServerConf()
 			int result = std::strncmp((_request.getPathRequest() + "/").c_str(), 
 				it2->getUri().c_str(), it2->getUri().size());
 				if (result == 0)
-					return (*it); 
+					return (&(*it)); 
 		}
 	}
-	return (*(_server->getServerConfs().begin()));
+	return (&(*(_server->getServerConfs().begin())));
 }
 
 
@@ -310,49 +333,45 @@ void		Client::handleScript(std::string const & fullPath)
 }
 
 
-Location const &	Client::getLocationBlock()
+void		Client::getCorrectLocationBlock()
 {
-	std::vector<Location>::const_reverse_iterator it = _serverConf.getLocation().rbegin();
+	std::vector<Location>::const_reverse_iterator it = _serverConf->getLocation().rbegin();
 
-	for (; it != _serverConf.getLocation().rend(); it++)
+	for (; it != _serverConf->getLocation().rend(); it++)
 	{
 		int result = std::strncmp((_request.getPathRequest() + "/").c_str(), 
 									it->getUri().c_str(), it->getUri().size());
 		if (result == 0)
-			return (*it);
+		{
+			_location = &(*it);
+			return ;
+		}
 	}
 	throw RequestError(INTERNAL_SERVER_ERROR, "Could not find config for this request");
 }
 
 
-void		Client::handleRequest()
+/**
+ * @brief 
+ * @return 
+ */
+void		Client::getCorrectPathRequest()
 {
-	Location const & conf = getLocationBlock();
-
-	std::string request = _request.getPathRequest().substr(conf.getUri().size() - 1);
+	std::string request = _request.getPathRequest().substr(_location->getUri().size() - 1);
 	if (request == "")
 		request = "/";
-	std::string fullPath = conf.getLocRoot() + request;
+	std::string fullPath = _location->getLocRoot() + request;
 	std::string const & method = _request.getHttpMethod();
 
-	std::vector<std::string> methods = conf.getAllowMethod();
+	std::vector<std::string> methods = _location->getAllowMethod();
 
 	if (!methods.empty() && std::find(methods.begin(), methods.end(), method) == methods.end())
 		throw RequestError(METHOD_NOT_ALLOWED, "Method " + method + "is not allowed");
 
 	if (method == "GET" && request == "/")
-		fullPath = searchIndexFile(fullPath, conf.getIndex(), conf.getAutoindex());
+		fullPath = searchIndexFile(fullPath, _location->getIndex(), _location->getAutoindex());
 
-	size_t point = fullPath.rfind(".");
-	if (point != std::string::npos && fullPath.substr(point + 1) == "php")
-		return handleScript(fullPath);
-	throw RequestError(METHOD_NOT_ALLOWED, "Should implement GET POST DELETE");
-	/*if (method == "GET")
-		return Response::getResponse(autoindex);
-	if (method == "POST")
-		return Response::postResponse(uploadDir);
-	if (method == "DELETE")
-		return Response::deleteResponse();*/
+	_correctPathRequest = fullPath;
 }
 
 

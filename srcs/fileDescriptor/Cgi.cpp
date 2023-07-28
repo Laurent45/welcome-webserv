@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 23:51:46 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/28 10:51:01 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/28 11:40:20 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -253,7 +253,7 @@ void Cgi::runChildProcess(int pipeToCgi[2], int pipeFromCgi[2])
     char *cgiPathCopy = NULL;
     char *scriptCopy = NULL;
 
-    std::string cgiPath = _clientInfo->getServerConf().getCgi().find("php")->second;
+    std::string cgiPath = _clientInfo->getServerConf()->getCgi().find("php")->second;
     cgiPathCopy = new char[cgiPath.size() + 1];
     strcpy(cgiPathCopy, cgiPath.c_str());
 
@@ -290,7 +290,7 @@ void Cgi::runChildProcess(int pipeToCgi[2], int pipeFromCgi[2])
 
 char **Cgi::mapCgiParams()
 {
-    ServerConf const &serverInfo = _clientInfo->getServerConf();
+    ServerConf const * serverInfo = _clientInfo->getServerConf();
     Request const &request = _clientInfo->getRequest();
     std::map<std::string, std::string> const &headers = request.getHeaders();
 
@@ -309,8 +309,8 @@ char **Cgi::mapCgiParams()
         std::string("SCRIPT_NAME=") + "index.php",
         std::string("PHP_SELF=") + "index.php",
         std::string("SCRIPT_FILENAME=") + _fullPath,
-        std::string("SERVER_NAME=") + serverInfo.getName()[0],
-        std::string("SERVER_PORT=") + StringUtils::intToString(serverInfo.getPort()),
+        std::string("SERVER_NAME=") + serverInfo->getName()[0],
+        std::string("SERVER_PORT=") + StringUtils::intToString(serverInfo->getPort()),
         std::string("SERVER_PROTOCOL=") + request.getHttpVersion(),
         std::string("SERVER_SOFTWARE=webserv"),
         std::string("REQUEST_URI=") + _fullPath};
