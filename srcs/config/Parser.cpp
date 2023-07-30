@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/31 19:39:21 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/26 23:00:35 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/07/30 17:36:36 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -272,7 +272,7 @@ void	Parser::formatConfFile(std::string &conf)
 			i++;
 	}
 	if (count != StringUtils::nbDeclarations(conf))
-		throw(ConfFileParseError("problem with semi-columns") );
+		throw(ConfFileParseError("problem with instructions or semi-columns") );
 }
 
 /**

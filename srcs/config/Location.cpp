@@ -22,7 +22,7 @@ const Location::location_instruction_tab_entry_t	Location::LOCATION_INSTRUCTIONS
 	{RETURN,"return"},
 	{L_CLIENT_MAX_BODY_SIZE, "client_max_body_size"},
 	{L_ERROR_PAGE, "error_page"},
-	{URI, "uri"},
+	//{URI, "uri"},
 };
 /******************************************************************************/
 

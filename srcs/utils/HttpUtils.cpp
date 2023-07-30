@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/29 21:37:33 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/27 13:09:43 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/07/30 11:16:06 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,13 +44,13 @@ HttpUtils::~HttpUtils()
 const HttpUtils::method_tab_entry_t HttpUtils::METHODS[] = 
 {
 	{GET, "GET"},
-	{HEAD, "HEAD"},
+	//{HEAD, "HEAD"},
 	{POST, "POST"},
-	{PUT, "PUT"},
+	//{PUT, "PUT"},
 	{DELETE, "DELETE"},
-	{CONNECT, "CONNECT"},
-	{OPTIONS, "OPTIONS"},
-	{TRACE, "TRACE"},
+	//{CONNECT, "CONNECT"},
+	//{OPTIONS, "OPTIONS"},
+	//{TRACE, "TRACE"},
 };
 
 

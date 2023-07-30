@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/29 21:35:05 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/27 13:06:49 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/07/30 17:28:12 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,13 +19,13 @@
 
 enum method_t {
 	GET,
-	HEAD,
+	//HEAD,
 	POST,
-	PUT,
+	//PUT,
 	DELETE,
-	CONNECT,
-	OPTIONS,
-	TRACE,
+	//CONNECT,
+	//OPTIONS,
+	//TRACE,
 	TOTAL_METHODS_INSTRUCTIONS
 };
 
