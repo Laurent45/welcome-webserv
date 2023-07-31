@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/23 18:24:01 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/26 21:29:06 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/07/31 11:32:20 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,7 @@
 #include "Exception.hpp"
 #include "Debugger.hpp"
 #include "WebServ.hpp"
+#include "FileUtils.hpp"
 
 #include <cstdlib>		// atoi
 #include <unistd.h>		// close
@@ -123,6 +124,11 @@ void ServerConf::setRoot(std::vector<std::string> token)
 		throw(ConfFileParseError("Only one root allowed"));
 	_root = token[1].erase(token[1].size() - 1);
 	StringUtils::addCwd(_root);
+	if (_root[0] != '/')
+		_root="/" + _root;
+	if (!FileUtils::isDirectory(_root.c_str()))
+
+		throw(ConfFileParseError(_root + "Root directive is wrong"));
 }
 
 void ServerConf::setCgi(std::vector<std::string> token)

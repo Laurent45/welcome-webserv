@@ -177,7 +177,7 @@ void Location::setUri(std::vector<std::string> token)
 	else if (token.size() == 2)	{
 		_uri = token[1];
 	if (_uri[0] != '/')
-		_uri="/" + _uri;//TODO verifier si on veut en rajouter un ou lever exception si le premier n'est pas /
+		_uri="/" + _uri;
 	if (_uri[_uri.size() - 1] != '/')
 		_uri+="/";
 	}
@@ -234,6 +234,11 @@ void Location::setLocRoot(std::vector<std::string> token)
 		throw(ConfFileParseError("Location bloc : Only one root allowed"));
 	_locRoot = token[1].erase(token[1].size() - 1);
 	StringUtils::addCwd(_locRoot);
+	if (_locRoot[0] != '/')
+		_locRoot="/" + _locRoot;
+	if (!FileUtils::isDirectory(_locRoot.c_str()))
+		throw(ConfFileParseError("Root directive is wrong"));
+
 }
 
 void Location::setUploadDir(std::vector<std::string> token)
