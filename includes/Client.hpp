@@ -19,8 +19,8 @@
 #include "Server.hpp"
 #include "Cgi.hpp"
 
-#define BUFFER_SIZE		1024
-#define	TIMEOUT			5000LL
+#define BUFFER_SIZE		128
+#define	TIMEOUT			500000LL
 
 class Client : public AFileDescriptor
 {
@@ -34,14 +34,19 @@ class Client : public AFileDescriptor
 		std::string						_correctPathRequest;
 		bool							_responseReady;
 		Cgi 							_cgi;
+		bool							_callCgi;
+		bool							_close;
 
 		Client(void);
 
-		ServerConf const *	getCorrectServerConf();
-		void				handleScript(std::string const & fullPath);
+		void				handleRequest();
+
+		void				getCorrectServerConf();
 		void				getCorrectLocationBlock();
 		void				getCorrectPathRequest();
 		std::string 		searchIndexFile(std::string path, std::vector<std::string> const &indexs, bool autoindex);
+
+		void				handleScript(std::string const & fullPath);
 
 	public:
 		
@@ -66,6 +71,7 @@ class Client : public AFileDescriptor
 		void	fillRawData(std::vector<unsigned char> const & data);
 		void	readyToRespond();
 		void	handleException(std::exception const & exception);
+		void	closeClient();
 };
 
 #endif

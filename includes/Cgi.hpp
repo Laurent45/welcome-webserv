@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 23:39:09 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/26 15:05:35 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/31 17:01:39 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,7 +32,7 @@ class Cgi : public AFileDescriptor
 
         int         initChildProcess(int toCgi[2], int fromCgi[2]);
         void        runChildProcess(int pipeToCgi[2], int pipeFromCgi[2]);        
-        char **     mapCgiParams();
+        char **     mapCgiParams(std::string const & script);
         void        processCgiResponse();
 
     public:

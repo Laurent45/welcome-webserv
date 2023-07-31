@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 18:05:52 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/28 10:22:02 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/31 18:47:31 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -102,6 +102,7 @@ void	Server::doOnRead()
 		return ;
 	}
 
+	std::cout << "Client open: " << clientSocket << std::endl;
 	client = new Client(clientSocket, *_webServ, this);
 	_webServ->addFd(clientSocket, client);
 }

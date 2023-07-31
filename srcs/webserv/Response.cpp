@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 19:19:11 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/26 15:19:59 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/31 21:56:10 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,6 +41,7 @@ void    Response::cgiResponse(std::vector<unsigned char> & clientRawData,
     }
     
     std::string common = Response::commonResponse(static_cast<status_code_t>(statusCode));
+    common += "Connection: keep-alive\r\n";
     for (std::vector<std::string>::iterator it = lines.begin(); it != lines.end(); it++)
     {
         common.insert(common.end(), it->begin(), it->end());
@@ -99,6 +100,7 @@ std::string     Response::bodyHeaders(std::string extension, unsigned int size)
 
 void    Response::errorResponse(status_code_t code, Client & client) 
 {
+    client.closeClient();
     std::pair<status_code_t, std::string> statusCode = 
                                 HttpUtils::getResponseStatus(code);
 

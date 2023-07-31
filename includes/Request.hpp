@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 18:20:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/22 20:16:19 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/31 16:54:59 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,12 +55,14 @@ class Request
 		std::map<std::string, std::string> const & getHeaders() const;
 		std::vector<unsigned char> const & getMessageBody() const;
 		bool				hasMessageBody() const;
+		bool				isEncoded() const;
+		int					getBodySize() const;
 
 		// Seters
-		void	setHttpMethod(std::string const & httpMethod);
+/* 		void	setHttpMethod(std::string const & httpMethod);
 		void	setPathRequest(std::string const & pathRequest);
 		void	setHttpVersion(std::string const & httpVersion);
-		void	setHeaders(std::map<std::string, std::string> const & headers);
+		void	setHeaders(std::map<std::string, std::string> const & headers); */
 
 		// Members methods
 		void	handleRequestLine(std::vector<unsigned char> & rawData);

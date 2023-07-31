@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 18:21:33 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/28 10:07:21 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/31 21:37:30 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,6 +45,7 @@ Request & Request::operator=(Request const & rhs)
 		_httpVersion = rhs._httpVersion;
 		_headers = rhs._headers;
 		_hasMessageBody = rhs._hasMessageBody;
+		_messageBody = rhs._messageBody;
 		_encode = rhs._encode;
 		_bodySize = rhs._bodySize;
 	}
@@ -105,7 +106,17 @@ bool	Request::hasMessageBody() const
 	return (_hasMessageBody);
 }
 
-void	Request::setHttpMethod(std::string const & httpMethod)
+bool	Request::isEncoded() const
+{
+	return (_encode);
+}
+
+int		Request::getBodySize() const
+{
+	return (_bodySize);
+}
+
+/* void	Request::setHttpMethod(std::string const & httpMethod)
 {
 	_httpMethod = httpMethod;
 }
@@ -123,7 +134,7 @@ void	Request::setHttpVersion(std::string const & httpVersion)
 void	Request::setHeaders(std::map<std::string, std::string> const & headers)
 {
 	_headers = headers; 
-}
+} */
 /******************************************************************************/
 
 /****************
@@ -168,7 +179,7 @@ void	Request::handleRequestLine(std::vector<unsigned char> & rawData)
 		_queryParam = _pathRequest.substr(query + 1);
 		_pathRequest = _pathRequest.substr(0, query);
 	}
-	rawData.erase(rawData.begin(), it);
+	rawData.erase(rawData.begin(), it + 2);
 }
 
 
@@ -229,9 +240,18 @@ void	Request::handleMessageBody(std::vector<unsigned char> & rawData)
 	{
 		_messageBody.insert(_messageBody.end(), rawData.begin(), rawData.end());
 		_bodySize -= rawData.size();
-		if (_bodySize > 0)
+		if (_bodySize > 0) {
+			rawData.clear();
 			throw RequestUncomplete();
+		}
+		if (_bodySize < 0) {
+			rawData.erase(rawData.begin(), rawData.begin() + (rawData.size() + _bodySize));
+		}
+		else
+			rawData.clear(); 
 	}
+	else
+		throw RequestError(METHOD_NOT_ALLOWED, "Encoded message body is not implemented");
 }
 /******************************************************************************/
 

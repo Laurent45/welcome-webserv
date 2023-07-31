@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/28 12:20:26 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/31 22:32:19 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,11 +33,12 @@
  *****************/
 
 Client::Client(void)
-	: AFileDescriptor(), 
+	: AFileDescriptor(),
 	  _server(NULL),
 	  _serverConf(NULL),
 	  _location(NULL),
-	  _responseReady(false)
+	  _responseReady(false),
+	  _close(false)
 {
 }
 
@@ -50,7 +51,9 @@ Client::Client(Client const &copy)
 	  _request(copy._request),
 	  _correctPathRequest(copy._correctPathRequest),
 	  _responseReady(copy._responseReady),
-	  _cgi(copy._cgi)
+	  _cgi(copy._cgi),
+	  _callCgi(copy._callCgi),
+	  _close(copy._close)
 {
 }
 
@@ -67,6 +70,8 @@ Client &Client::operator=(Client const &rhs)
 		_correctPathRequest = rhs._correctPathRequest;
 		_responseReady = rhs._responseReady;
 		_cgi = rhs._cgi;
+		_callCgi = rhs._callCgi;
+		_close = rhs._close;
 	}
 
 	return (*this);
@@ -74,10 +79,14 @@ Client &Client::operator=(Client const &rhs)
 
 Client::~Client()
 {
-	if (_cgi.getReadFd() != -1)
+	if (_cgi.getReadFd() != -1) {
+		std::cout << "Close read cgi des: " << _cgi.getReadFd() << std::endl;
 		close(_cgi.getReadFd());
-	if (_cgi.getWriteFd() != -1)
-		close(_cgi.getWriteFd());		
+	}
+	if (_cgi.getWriteFd() != -1) {
+		close(_cgi.getWriteFd());
+		std::cout << "Close write cgi des: " << _cgi.getWriteFd() << std::endl;
+	}
 }
 /******************************************************************************/
 
@@ -85,13 +94,15 @@ Client::~Client()
  * CONSTRUCTORS
  ***************/
 
-Client::Client(int fd, WebServ &webServ, Server const * server) 
+Client::Client(int fd, WebServ &webServ, Server const *server)
 	: AFileDescriptor(fd, webServ),
 	  _startTime(0),
 	  _server(server),
 	  _serverConf(NULL),
 	  _location(NULL),
-	  _responseReady(false)
+	  _responseReady(false),
+	  _callCgi(false),
+	  _close(false)
 {
 }
 /******************************************************************************/
@@ -105,7 +116,7 @@ Request const &Client::getRequest() const
 	return (this->_request);
 }
 
-ServerConf const * Client::getServerConf() const
+ServerConf const *Client::getServerConf() const
 {
 	return (this->_serverConf);
 }
@@ -121,8 +132,10 @@ ServerConf const * Client::getServerConf() const
  */
 void Client::doOnRead()
 {
-	if (_startTime == 0)
-	{
+	if (_close)
+		return _webServ->clearFd(_fd);
+
+	if (_startTime == 0) {
 		_startTime = TimeUtils::getTimeOfDayMs();
 		_webServ->addClient(this);
 	}
@@ -131,34 +144,21 @@ void Client::doOnRead()
 	ssize_t n;
 
 	if ((n = recv(_fd, buffer, BUFFER_SIZE, 0)) > 0)
-		_rawData.assign(buffer, buffer + n);
+		_rawData.insert(_rawData.end(), buffer, buffer + n);
 
 	if (n < 0) // Try to read next time fd is NON_BLOCK and we can't check errno
 		return;
 	else if (n == 0) // Client close connection
-		_webServ->clearFd(_fd);
-	else
-	{
-		try
-		{
-			if (_request.getHttpMethod().empty())
-				_request.handleRequestLine(_rawData);
-			if (_request.getHeaders().empty())
-				_request.handleHeaders(_rawData);
-			if (_request.hasMessageBody())
-				_request.handleMessageBody(_rawData);
-		}
-		catch (RequestUncomplete &exception)
-		{
+		return _webServ->clearFd(_fd);
+	else {
+		try {
+			handleRequest();
+		} catch (RequestUncomplete &exception) {
 			return;
-		}
-		catch (std::exception const &exception)
-		{
-			handleException(exception);
-			return;
+		} catch (std::exception const &exception) {
+			return handleException(exception);
 		}
 		DEBUG_COUT(_request.getHttpMethod() + " " << _request.getPathRequest());
-		_serverConf = getCorrectServerConf();
 		_webServ->updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
 	}
 }
@@ -171,7 +171,7 @@ void Client::doOnWrite()
 {
 	if (_responseReady)
 	{
-		send(_fd, &(_rawData[0]), _rawData.size(), 0);
+		send(_fd, &(*_rawData.begin()), _rawData.size(), 0);
 
 		// Reset client field for next request
 		_webServ->updateEpoll(_fd, EPOLLIN, EPOLL_CTL_MOD);
@@ -180,18 +180,17 @@ void Client::doOnWrite()
 		_request = Request();
 		_correctPathRequest = "";
 		_cgi = Cgi();
+		_callCgi = false;
 		_startTime = 0;
 		_serverConf = NULL;
 		_location = NULL;
+		_rawData.clear();
 		return;
 	}
 
 	try
 	{
-		getCorrectLocationBlock();
-		getCorrectPathRequest();
-		size_t point = _correctPathRequest.rfind(".");
-		if (point != std::string::npos && _correctPathRequest.substr(point + 1) == "php")
+		if (_callCgi)
 			return handleScript(_correctPathRequest);
 		throw RequestError(METHOD_NOT_ALLOWED, "Should implement GET POST DELETE");
 		/*if (method == "GET")
@@ -214,7 +213,7 @@ void Client::doOnWrite()
  */
 void Client::doOnError(uint32_t event)
 {
-	std::cout << "Client on error, event = " << event << std::endl;
+	DEBUG_COUT("Client on error");
 	_webServ->clearFd(_fd);
 }
 
@@ -222,12 +221,11 @@ void Client::doOnError(uint32_t event)
  * @brief
  * @param response
  */
-void Client::responseCgi(std::vector<unsigned char> const & cgiRawData)
+void Client::responseCgi(std::vector<unsigned char> const &cgiRawData)
 {
 	_responseReady = true;
 	_rawData.assign(cgiRawData.begin(), cgiRawData.end());
 }
-
 
 void Client::fillRawData(std::vector<unsigned char> const &data)
 {
@@ -240,8 +238,7 @@ void Client::readyToRespond()
 	_webServ->updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
 }
 
-
-void	Client::handleException(std::exception const & exception)
+void Client::handleException(std::exception const &exception)
 {
 	DEBUG_COUT(exception.what());
 	try
@@ -254,7 +251,6 @@ void	Client::handleException(std::exception const & exception)
 		Response::errorResponse(INTERNAL_SERVER_ERROR, *this);
 	}
 }
-
 
 bool Client::timeoutReached()
 {
@@ -278,13 +274,51 @@ bool Client::timeoutReached()
 	}
 	return (result);
 }
+
+void	Client::closeClient()
+{
+	_close = true;
+}
 /******************************************************************************/
 
 /*****************
  * PRIVATE METHODS
  *****************/
 
-ServerConf const *		 Client::getCorrectServerConf()
+/**
+ * @brief 
+ */
+void Client::handleRequest()
+{
+	if (_request.getHttpMethod().empty())
+		_request.handleRequestLine(_rawData);
+
+	if (_request.getHeaders().empty())
+	{
+		_request.handleHeaders(_rawData);
+
+		getCorrectServerConf();
+		getCorrectLocationBlock();
+		getCorrectPathRequest();
+	}
+
+	if (_request.hasMessageBody())
+	{
+		if (!_request.isEncoded() && _request.getBodySize() > _location->getClientBodySize())
+			throw RequestError(PAYLOAD_TOO_LARGE, "Body size too large");
+		if (_callCgi)
+			_request.handleMessageBody(_rawData);
+		else
+			std::cout << "Implement upload" << std::endl;
+	}
+}
+
+
+/**
+ * @brief 
+ * @return 
+ */
+void	Client::getCorrectServerConf()
 {
 	std::vector<ServerConf>::const_iterator it = _server->getServerConfs().begin();
 	for (; it != _server->getServerConfs().end(); it++)
@@ -294,14 +328,21 @@ ServerConf const *		 Client::getCorrectServerConf()
 		for (; its != serversName.end(); its++)
 		{
 			if (_request.getHeaders().find("Host")->second == *its + ":" + StringUtils::intToString(it->getPort()))
-				return (&(*it));
+			{
+				_serverConf = &(*it);
+				return ;
+			}
 		}
 	}
-	return (&(*(_server->getServerConfs().begin())));
+	_serverConf = (&(*(_server->getServerConfs().begin())));
 }
 
 
-void		Client::handleScript(std::string const & fullPath)
+/**
+ * @brief 
+ * @param fullPath 
+ */
+void Client::handleScript(std::string const &fullPath)
 {
 	_cgi = Cgi(*_webServ, *this, fullPath);
 
@@ -317,36 +358,37 @@ void		Client::handleScript(std::string const & fullPath)
 	_webServ->updateEpoll(_fd, 0, EPOLL_CTL_MOD);
 }
 
-
-void		Client::getCorrectLocationBlock()
+/**
+ * @brief 
+ */
+void Client::getCorrectLocationBlock()
 {
 	std::vector<Location>::const_reverse_iterator it = _serverConf->getLocation().rbegin();
 
 	for (; it != _serverConf->getLocation().rend(); it++)
 	{
-		int result = std::strncmp((_request.getPathRequest() + "/").c_str(), 
-									it->getUri().c_str(), it->getUri().size());
+		int result = std::strncmp((_request.getPathRequest() + "/").c_str(),
+								  it->getUri().c_str(), it->getUri().size());
 		if (result == 0)
 		{
 			_location = &(*it);
-			return ;
+			return;
 		}
 	}
 	throw RequestError(INTERNAL_SERVER_ERROR, "Could not find config for this request");
 }
 
-
 /**
- * @brief 
- * @return 
+ * @brief
+ * @return
  */
-void		Client::getCorrectPathRequest()
+void	Client::getCorrectPathRequest()
 {
 	std::string request = _request.getPathRequest().substr(_location->getUri().size() - 1);
 	if (request == "")
 		request = "/";
 	std::string fullPath = _location->getLocRoot() + request;
-	std::string const & method = _request.getHttpMethod();
+	std::string const &method = _request.getHttpMethod();
 
 	std::vector<std::string> methods = _location->getAllowMethod();
 
@@ -357,9 +399,19 @@ void		Client::getCorrectPathRequest()
 		fullPath = searchIndexFile(fullPath, _location->getIndex(), _location->getAutoindex());
 
 	_correctPathRequest = fullPath;
+	size_t point = _correctPathRequest.rfind(".");
+	if (point != std::string::npos && _correctPathRequest.substr(point + 1) == "php")
+		_callCgi = true;
 }
 
 
+/**
+ * @brief 
+ * @param path 
+ * @param indexs 
+ * @param autoindex 
+ * @return 
+ */
 std::string Client::searchIndexFile(std::string path, std::vector<std::string> const &indexs, bool autoindex)
 {
 	std::vector<std::string>::const_iterator it = indexs.begin();

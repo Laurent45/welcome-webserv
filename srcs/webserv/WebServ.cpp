@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:13 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/26 17:18:34 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/31 22:26:44 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -155,13 +155,17 @@ void    WebServ::start()
 			int					fd = events[i].data.fd;
 			uint32_t			event = events[i].events;
 			AFileDescriptor *	aFd = _mapFd[fd];
-			
-			if (event & EPOLLIN)
-				aFd->doOnRead();
-			if (event & EPOLLOUT)
-				aFd->doOnWrite();
-			if (!(event & EPOLLIN) && !(event & EPOLLOUT))
-				aFd->doOnError(event);
+
+			switch (event) {
+				case EPOLLIN:
+					aFd->doOnRead();
+					break;
+				case EPOLLOUT:
+					aFd->doOnWrite();
+					break;
+				default:
+					aFd->doOnError(event);
+			}
 		}
 		
 		if (!_clients.empty())
@@ -203,7 +207,7 @@ void	WebServ::updateEpoll(int fd, u_int32_t event, int mod)
  */
 void	WebServ::clearFd(int fd)
 {
-	std::vector<Client *>::iterator it = _clients.begin();
+	/* std::vector<Client *>::iterator it = _clients.begin();
 	for (; it != _clients.end(); it++)
 	{
 		if ((*it)->getFd() == fd)
@@ -211,13 +215,15 @@ void	WebServ::clearFd(int fd)
 			_clients.erase(it);
 			break;
 		}
-	}
+	} */
 
     updateEpoll(fd, 0, EPOLL_CTL_DEL);
 	close(fd);
 
-	if (_mapFd.find(fd) == _mapFd.end())
+	if (_mapFd.find(fd) == _mapFd.end()) {
+		std::cout << "kbxajsxbajsbxjkabsxakb" << std::endl;
 		return ;
+	}
 	if (_mapFd[fd])
 		delete _mapFd[fd];
 	_mapFd.erase(fd);
