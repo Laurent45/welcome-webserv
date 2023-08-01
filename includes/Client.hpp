@@ -72,6 +72,7 @@ class Client : public AFileDescriptor
 		void	readyToRespond();
 		void	handleException(std::exception const & exception);
 		void	closeClient();
+		void	prepareToNextRequest();
 };
 
 #endif

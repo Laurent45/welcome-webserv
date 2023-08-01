@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 23:51:46 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/31 22:12:51 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/01 10:03:10 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -166,22 +166,26 @@ void Cgi::doOnRead()
 
     if (n == 0)
     {
-        try
-        {
-            processCgiResponse();
-        }
-        catch (const std::exception &e)
-        {
-           _clientInfo->handleException(e); 
-        }
-
         _webServ->updateEpoll(_fdRead, 0, EPOLL_CTL_DEL);
 		_webServ->removeFd(_fdRead);
         close(_fdRead);
-
         _fdRead = -1;
 
-        _clientInfo->readyToRespond();
+        try {
+	        unsigned char src[] = {'\r', '\n', '\r', '\n'};
+	        std::vector<unsigned char>::iterator ite;
+
+	        ite = std::search(_rawData.begin(), _rawData.end(), src, src + 4);
+	        if (_rawData.empty() || ite == _rawData.end())
+		        throw RequestError(INTERNAL_SERVER_ERROR, "Failed to read data from cgi");
+
+            std::string headers(_rawData.begin(), ite);
+            std::vector<unsigned char> body(ite + 4, _rawData.end());
+
+            Response::cgiResponse(*_clientInfo, headers, body);
+        } catch (const std::exception &e) {
+           _clientInfo->handleException(e); 
+        }
     }
 }
 
@@ -353,7 +357,5 @@ void    Cgi::processCgiResponse()
     std::string headers(_rawData.begin(), ite);
     std::vector<unsigned char> body(ite + 4, _rawData.end());
 
-    Response::cgiResponse(_rawData, headers, body);
-
-    _clientInfo->responseCgi(_rawData);
+    Response::cgiResponse(*_clientInfo, headers, body);
 }

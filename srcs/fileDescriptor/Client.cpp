@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/31 22:32:19 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/01 10:04:05 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -169,27 +169,12 @@ void Client::doOnRead()
  */
 void Client::doOnWrite()
 {
-	if (_responseReady)
-	{
+	if (_responseReady) {
 		send(_fd, &(*_rawData.begin()), _rawData.size(), 0);
-
-		// Reset client field for next request
-		_webServ->updateEpoll(_fd, EPOLLIN, EPOLL_CTL_MOD);
-		_webServ->removeClient(_fd);
-		_responseReady = false;
-		_request = Request();
-		_correctPathRequest = "";
-		_cgi = Cgi();
-		_callCgi = false;
-		_startTime = 0;
-		_serverConf = NULL;
-		_location = NULL;
-		_rawData.clear();
-		return;
+		return prepareToNextRequest();
 	}
 
-	try
-	{
+	try {
 		if (_callCgi)
 			return handleScript(_correctPathRequest);
 		throw RequestError(METHOD_NOT_ALLOWED, "Should implement GET POST DELETE");
@@ -199,9 +184,7 @@ void Client::doOnWrite()
 			return Response::postResponse(uploadDir);
 		if (method == "DELETE")
 			return Response::deleteResponse();*/
-	}
-	catch (std::exception &exception)
-	{
+	} catch (std::exception &exception) {
 		handleException(exception);
 	}
 }
@@ -213,18 +196,8 @@ void Client::doOnWrite()
  */
 void Client::doOnError(uint32_t event)
 {
-	DEBUG_COUT("Client on error");
+	DEBUG_COUT("Client on error: " + StringUtils::intToString(event));
 	_webServ->clearFd(_fd);
-}
-
-/**
- * @brief
- * @param response
- */
-void Client::responseCgi(std::vector<unsigned char> const &cgiRawData)
-{
-	_responseReady = true;
-	_rawData.assign(cgiRawData.begin(), cgiRawData.end());
 }
 
 void Client::fillRawData(std::vector<unsigned char> const &data)
@@ -429,4 +402,24 @@ std::string Client::searchIndexFile(std::string path, std::vector<std::string> c
 	if (!autoindex)
 		throw RequestError(FORBIDDEN, "Autoindex is off");
 	return path;
+}
+
+
+/**
+ * @brief 
+ */
+void	Client::prepareToNextRequest()
+{
+	_webServ->updateEpoll(_fd, EPOLLIN, EPOLL_CTL_MOD);
+	_webServ->removeClient(_fd);
+
+	_responseReady = false;
+	_request = Request();
+	_correctPathRequest = "";
+	_cgi = Cgi();
+	_callCgi = false;
+	_startTime = 0;
+	_serverConf = NULL;
+	_location = NULL;
+	_rawData.clear();
 }
