@@ -26,14 +26,19 @@ class Client : public AFileDescriptor
 {
 	private:
 		long long						_startTime;
-		std::vector<unsigned char>		_rawData;
+
+		std::vector<unsigned char>		_inputData;
+		std::vector<unsigned char>		_outputData;
+
 		Server const * const			_server;
 		ServerConf const * 				_serverConf; 
 		Location const *				_location;
-		Request							_request;
 		std::string						_correctPathRequest;
-		bool							_responseReady;
+
+		Request							_request;
 		Cgi 							_cgi;
+
+		bool							_responseReady;
 		bool							_callCgi;
 		bool							_close;
 
@@ -66,7 +71,6 @@ class Client : public AFileDescriptor
 		virtual void doOnWrite();
 		virtual void doOnError(uint32_t event);
 
-		void	responseCgi(std::vector<unsigned char> const & cgiRawData);
 		bool	timeoutReached();
 		void	fillRawData(std::vector<unsigned char> const & data);
 		void	readyToRespond();
