@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:13 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/01 12:04:07 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/01 14:15:46 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,10 +38,8 @@ WebServ::WebServ(WebServ const & copy)
 		_clients(copy._clients)
 {}
 
-WebServ &   WebServ::operator=(WebServ const & rhs)
-{
-    if (this != &rhs)
-    {
+WebServ &   WebServ::operator=(WebServ const & rhs) {
+    if (this != &rhs) {
         _epollFd = rhs._epollFd;
         _mapFd = rhs._mapFd;
 		_clients = rhs._clients;
@@ -49,19 +47,16 @@ WebServ &   WebServ::operator=(WebServ const & rhs)
     return (*this);
 }
 
-WebServ::~WebServ()
-{
+WebServ::~WebServ() {
 	std::map<int, AFileDescriptor *>::iterator it = this->_mapFd.begin();
-	for (; it != this->_mapFd.end(); it++)
-	{
-		if (dynamic_cast<Client *>(it->second) || dynamic_cast<Server *>(it->second))
-		{
+
+	for (; it != this->_mapFd.end(); it++) {
+		if (dynamic_cast<Client *>(it->second) || dynamic_cast<Server *>(it->second)) {
 			delete it->second;
 			close(it->first);
 		}
 	}
 	close(_epollFd);
-
 }
 /******************************************************************************/
 
