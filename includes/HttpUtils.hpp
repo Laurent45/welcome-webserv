@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpUtils.hpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/29 21:35:05 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/30 17:28:12 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/08/02 18:38:24 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,13 +19,8 @@
 
 enum method_t {
 	GET,
-	//HEAD,
 	POST,
-	//PUT,
 	DELETE,
-	//CONNECT,
-	//OPTIONS,
-	//TRACE,
 	TOTAL_METHODS_INSTRUCTIONS
 };
 
@@ -116,6 +111,9 @@ class HttpUtils
 		static std::map<std::string, std::string> 	initMimeTypes();
 
     public:
+
+		static const unsigned char *						CRLF;
+		static const unsigned char *						CRLFCRLF;
 
 		struct method_tab_entry_t 
 		{

@@ -6,13 +6,14 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/08/01 15:57:52 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/02 14:52:30 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/02 21:39:21 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Upload.hpp"
 #include "Exception.hpp"
 #include "StringUtils.hpp"
+#include "HttpUtils.hpp"
 
 #include <algorithm> /* search */
 
@@ -65,8 +66,12 @@ bool	Upload::isUploading() const {
 	return _uploading;
 }
 
-void	Upload::setBondary(std::string bondary) {
+void	Upload::setBondary(std::string const & bondary) {
 	_bondary = bondary;
+}
+
+void	Upload::setFilePath(std::string const & filePath) {
+	_filePath = filePath;
 }
 /******************************************************************************/
 
@@ -78,42 +83,31 @@ void	Upload::setBondary(std::string bondary) {
 void    Upload::prepareUpload(std::vector<unsigned char> & data, size_t & bodySize) {
     
 	std::vector<unsigned char>::iterator ite;
-	unsigned char src[] = {'\r', '\n', '\r', '\n'};
-	size_t	sizeTmp = data.size();
 
-	ite = std::search(data.begin(), data.end(), src, src + 4);
+	ite = std::search(data.begin(), data.end(), HttpUtils::CRLFCRLF, HttpUtils::CRLFCRLF + 4);
 	if (ite == data.end())
 		throw RequestUncomplete();
 
-	// Check body size
 	std::map<std::string, std::string> heads;
 	std::string headers(data.begin(), ite);
 	std::vector<std::string> vec = StringUtils::splitString(headers, "\r\n");
-	std::vector<std::string>::iterator it = vec.begin();
 
-	for (; it != vec.end(); it++)
-	{
+	for (std::vector<std::string>::iterator it = vec.begin(); it != vec.end(); it++) {
+		/* Check if header key is valid */
 		size_t sep = (*it).find(":");
 		if (sep == std::string::npos)
 			continue;
-		if (std::find_if((*it).begin(), (*it).begin() + sep, isblank) != (*it).begin()+sep)
+		if (std::find_if((*it).begin(), (*it).begin() + sep, isblank) != (*it).begin() + sep)
 			continue;
+
 		std::string key = (*it).substr(0, sep);
 		std::string value = StringUtils::trimWhitespaces((*it).substr(sep + 1));
 		heads[key] = value;
 	}
+
+	bodySize -= &(*(ite + 4)) - &(*data.begin());
 	data.erase(data.begin(), ite + 4);
-	bodySize -= (sizeTmp - data.size()); 
-}
-
-
-void	Upload::openUploadFile() {
-	// TODO: Try to find some information in headers fo create filename
-
-	_file.open("test", std::fstream::out | std::fstream::trunc | std::fstream::binary);
-	if (!_file.good())
-		throw RequestError(INTERNAL_SERVER_ERROR, "Failed to open file for upload");
-	_uploading = true;
+	openUploadFile(heads);	
 }
 
 
@@ -169,4 +163,26 @@ void	Upload::clear() {
 	_file.close();
 	_fileName = "";
 	_uploading = false;
+}
+
+void	Upload::openUploadFile(std::map<std::string, std::string> const & headers) {
+
+	std::map<std::string, std::string>::const_iterator it = headers.find("Content-Disposition");
+	if (it == headers.end())
+		throw RequestError(BAD_REQUEST, "Missing content disposition header to handle upload");
+
+	size_t pos = it->second.find("filename=\"");
+	if (pos == std::string::npos)
+		throw RequestError(BAD_REQUEST, "Missing filename in Content-Disposition header");
+
+	_fileName = it->second.substr(pos + 10);
+	_fileName = _fileName.substr(0, _fileName.size() - 1);
+
+	if (_fileName.empty())
+		throw RequestError(BAD_REQUEST, "Filename to upload is empty");
+
+	_file.open((_filePath + "/" + _fileName).c_str(), std::fstream::out | std::fstream::trunc | std::fstream::binary);
+	if (!_file.good())
+		throw RequestError(INTERNAL_SERVER_ERROR, "Failed to open file for upload");
+	_uploading = true;
 }

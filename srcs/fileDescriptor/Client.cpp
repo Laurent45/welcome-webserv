@@ -290,6 +290,8 @@ void Client::handleRequest() {
 				if (type->second.compare(0, 20, "multipart/form-data;") != 0)
 					throw RequestError(METHOD_NOT_ALLOWED, "Content type: " + type->second + " is not supported");
 				_request.searchBondary();
+				_request.getUpload().setFilePath(_location->getUploadDir());
+
 			}
 		}
 	}
@@ -299,7 +301,6 @@ void Client::handleRequest() {
 			_request.handleMessageBody(_inputData);
 		else
 			_request.uploadFiles(_inputData);
-			//throw RequestError(INTERNAL_SERVER_ERROR, "Upload not implemented yet");
 	}
 }
 

@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 18:20:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/02 14:51:16 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/02 21:37:04 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,6 +55,7 @@ class Request
 		bool				hasMessageBody() const;
 		bool				isEncoded() const;
 		size_t				getBodySize() const;
+		Upload &			getUpload();
 
 		// Members methods
 		void	handleRequestLine(std::vector<unsigned char> & rawData);

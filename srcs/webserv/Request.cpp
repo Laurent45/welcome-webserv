@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 18:21:33 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/02 14:57:42 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/02 21:37:34 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -114,6 +114,10 @@ bool	Request::isEncoded() const
 size_t		Request::getBodySize() const
 {
 	return (_bodySize);
+}
+
+Upload &	Request::getUpload() {
+	return (_upload);
 }
 /******************************************************************************/
 
@@ -235,9 +239,6 @@ void	Request::uploadFiles(std::vector<unsigned char> & rawData) {
 	
 	if (!_upload.isUploading()) {
 		_upload.prepareUpload(rawData, _bodySize);
-		_upload.openUploadFile();
-		if (_bodySize == 0)
-			throw RequestError(INTERNAL_SERVER_ERROR, "");
 		if (rawData.empty())
 			throw RequestUncomplete();
 	}
