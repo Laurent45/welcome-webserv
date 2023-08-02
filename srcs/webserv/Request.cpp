@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 18:21:33 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/31 21:37:30 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/02 14:57:42 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,7 @@
 * CANNONICAL FORM
 *****************/
 
-Request::Request() : _hasMessageBody(false)
+Request::Request() : _hasMessageBody(false), _encode(false)
 {}
 
 Request::Request(Request const & copy)
@@ -111,30 +111,10 @@ bool	Request::isEncoded() const
 	return (_encode);
 }
 
-int		Request::getBodySize() const
+size_t		Request::getBodySize() const
 {
 	return (_bodySize);
 }
-
-/* void	Request::setHttpMethod(std::string const & httpMethod)
-{
-	_httpMethod = httpMethod;
-}
-
-void	Request::setPathRequest(std::string const & pathRequest)
-{
-	_pathRequest = pathRequest;
-}
-
-void	Request::setHttpVersion(std::string const & httpVersion)
-{
-	_httpVersion = httpVersion;
-}
-
-void	Request::setHeaders(std::map<std::string, std::string> const & headers)
-{
-	_headers = headers; 
-} */
 /******************************************************************************/
 
 /****************
@@ -187,8 +167,8 @@ void	Request::handleRequestLine(std::vector<unsigned char> & rawData)
  * @brief 
  * @param rawData 
  */
-void	Request::handleHeaders(std::vector<unsigned char> & rawData)
-{	
+void	Request::handleHeaders(std::vector<unsigned char> & rawData) {	
+
 	std::vector<unsigned char>::iterator ite;
 	unsigned char src[] = {'\r', '\n', '\r', '\n'};
 
@@ -200,8 +180,7 @@ void	Request::handleHeaders(std::vector<unsigned char> & rawData)
 	std::vector<std::string> vec = StringUtils::splitString(headers, "\r\n");
 	std::vector<std::string>::iterator it = vec.begin();
 
-	for (; it != vec.end(); it++)
-	{
+	for (; it != vec.end(); it++) {
 		size_t sep = (*it).find(":");
 		if (sep == std::string::npos)
 			continue;
@@ -209,16 +188,15 @@ void	Request::handleHeaders(std::vector<unsigned char> & rawData)
 			continue;
 		std::string key = (*it).substr(0, sep);
 		std::string value = StringUtils::trimWhitespaces((*it).substr(sep + 1));
-		if (key == "Content-Length")
-			_encode = false;
 		if (key == "Transfer-Encoding")
 			_encode = true;
 		_headers[key] = value;
 	}
+
 	if (_headers.find("Host") == _headers.end())
 		throw RequestError(BAD_REQUEST, "Host header is mandatory");
-	if (_httpMethod == "POST")
-	{
+
+	if (_httpMethod == "POST") {
 		std::map<std::string, std::string>::iterator length = _headers.find("Content-Length");
 		std::map<std::string, std::string>::iterator encod = _headers.find("Transfer-Encoding");
 		if (length == _headers.end() && encod == _headers.end())
@@ -236,22 +214,54 @@ void	Request::handleHeaders(std::vector<unsigned char> & rawData)
  */
 void	Request::handleMessageBody(std::vector<unsigned char> & rawData)
 {
-	if (_encode == false)
-	{
-		_messageBody.insert(_messageBody.end(), rawData.begin(), rawData.end());
-		_bodySize -= rawData.size();
-		if (_bodySize > 0) {
-			rawData.clear();
-			throw RequestUncomplete();
-		}
-		if (_bodySize < 0) {
-			rawData.erase(rawData.begin(), rawData.begin() + (rawData.size() + _bodySize));
-		}
-		else
-			rawData.clear(); 
-	}
-	else
+	if (_encode)
 		throw RequestError(METHOD_NOT_ALLOWED, "Encoded message body is not implemented");
+	
+	std::vector<unsigned char>::iterator end = rawData.end();
+	if (rawData.size() > _bodySize)
+		end = rawData.begin() + (rawData.size() - _bodySize) + 1;
+
+	_messageBody.insert(_messageBody.end(), rawData.begin(), end);
+	_bodySize -= (&(*end) - &(*rawData.begin()));
+	if (_bodySize > 0) {
+		rawData.clear();
+		throw RequestUncomplete();
+	}
+	rawData.erase(rawData.begin(), end);
+}
+
+
+void	Request::uploadFiles(std::vector<unsigned char> & rawData) {
+	
+	if (!_upload.isUploading()) {
+		_upload.prepareUpload(rawData, _bodySize);
+		_upload.openUploadFile();
+		if (_bodySize == 0)
+			throw RequestError(INTERNAL_SERVER_ERROR, "");
+		if (rawData.empty())
+			throw RequestUncomplete();
+	}
+
+	_upload.upload(rawData, _bodySize);
+	throw RequestError(NOT_FOUND, "File uploaded");
+}
+
+
+void	Request::searchBondary() {
+	
+	std::string bondary = "boundary=";
+	std::map<std::string, std::string>::iterator it = _headers.find("Content-Type");
+
+	if (it == _headers.end())
+		throw RequestError(BAD_REQUEST, "Content-Type header missing for search boundary");
+
+	std::string const & value = it->second;
+
+	size_t pos =value.find(bondary);
+	if (pos == std::string::npos)
+		throw RequestError(BAD_REQUEST, "Boundary value is not set");
+
+	_upload.setBondary(value.substr(pos + bondary.size()));
 }
 /******************************************************************************/
 

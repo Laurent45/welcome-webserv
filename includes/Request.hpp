@@ -6,13 +6,14 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 18:20:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/31 16:54:59 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/02 14:51:16 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef REQUEST_HPP
 #define REQUEST_HPP
 
+#include "Upload.hpp"
 #include <string>
 #include <map>
 #include <vector>
@@ -31,14 +32,11 @@ class Request
 		std::vector<unsigned char>			_messageBody;
 		bool								_hasMessageBody;
 		bool								_encode;
-		int									_bodySize;
-
+		size_t								_bodySize;
+		Upload								_upload;
 
 	public:
 		
-		static int const	requestUncomplete;
-		static int const	requestComplete;
-
 		// Cannonical Form
 		Request();
 		Request(Request const & copy);
@@ -56,18 +54,14 @@ class Request
 		std::vector<unsigned char> const & getMessageBody() const;
 		bool				hasMessageBody() const;
 		bool				isEncoded() const;
-		int					getBodySize() const;
-
-		// Seters
-/* 		void	setHttpMethod(std::string const & httpMethod);
-		void	setPathRequest(std::string const & pathRequest);
-		void	setHttpVersion(std::string const & httpVersion);
-		void	setHeaders(std::map<std::string, std::string> const & headers); */
+		size_t				getBodySize() const;
 
 		// Members methods
 		void	handleRequestLine(std::vector<unsigned char> & rawData);
 		void	handleHeaders(std::vector<unsigned char> & rawData);
 		void	handleMessageBody(std::vector<unsigned char> & rawData);
+		void	searchBondary();
+		void	uploadFiles(std::vector<unsigned char> & rawData);
 
 };
 

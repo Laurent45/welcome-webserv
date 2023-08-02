@@ -107,7 +107,7 @@ std::vector<std::string> const &Location::getAllowMethod() const { return _allow
 std::string const &Location::getLocRoot() const { return _locRoot; }
 std::string const &Location::getUploadDir() const { return _upload_dir; }
 std::map<std::string, std::string> const &Location::getCgi() const { return _cgi; }
-long int const &Location::getClientBodySize() const { return (_client_body_size); }
+size_t	const &Location::getClientBodySize() const { return (_client_body_size); }
 std::string const &Location::getError() const { return (_error_pages); }
 
 void Location::setLocation(const std::string &str, int &count, int &flag)

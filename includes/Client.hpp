@@ -18,8 +18,9 @@
 #include "Request.hpp"
 #include "Server.hpp"
 #include "Cgi.hpp"
+#include "Upload.hpp"
 
-#define BUFFER_SIZE		128
+#define BUFFER_SIZE		256
 #define	TIMEOUT			500000LL
 
 class Client : public AFileDescriptor
