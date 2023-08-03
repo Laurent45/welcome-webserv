@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/01 15:22:38 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/08/03 09:40:44 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -366,7 +366,7 @@ void	Client::getCorrectPathRequest() {
 	std::vector<std::string> methods = _location->getAllowMethod();
 
 	if (!methods.empty() && std::find(methods.begin(), methods.end(), method) == methods.end())
-		throw RequestError(METHOD_NOT_ALLOWED, "Method " + method + "is not allowed");
+		throw RequestError(METHOD_NOT_ALLOWED, "Method " + method + " is not allowed");
 
 	if (method == "GET" && request == "/")
 		fullPath = searchIndexFile(fullPath, _location->getIndex(), _location->getAutoindex());
