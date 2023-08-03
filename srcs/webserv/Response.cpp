@@ -25,33 +25,33 @@
 #include <cstdlib> // atoi
 
 
-void    Response::cgiResponse(Client & client, std::string headers,
-                                std::vector<unsigned char> & body)
-{
+
+
+/***********************
+* STATIC PUBLIC METHODS
+***********************/
+
+void    Response::cgiResponse(Client & client, std::string headers, std::vector<unsigned char> & body) {
+
     int statusCode = 200;
 
     std::vector<std::string> lines = StringUtils::splitString(headers, "\r\n");
+
     std::string statusLine = lines[0];
     std::string cmp = "Status: ";
-    if (std::strncmp(cmp.c_str(), statusLine.c_str(), cmp.size()) == 0)
-    {
+    if (std::strncmp(cmp.c_str(), statusLine.c_str(), cmp.size()) == 0) {
         statusCode = std::atoi(statusLine.substr(cmp.size() - 1, 4).c_str());
-        statusCode =  HttpUtils::getResponseStatus(static_cast<status_code_t>(statusCode))
-                        .first;
+        statusCode = HttpUtils::getResponseStatus(static_cast<status_code_t>(statusCode)).first;
         if (statusCode >= 400)
             throw RequestError(static_cast<status_code_t>(statusCode), "Cgi error response status");
     }
     
-    std::string common = Response::commonResponse(static_cast<status_code_t>(statusCode));
-    common += "Connection: keep-alive\r\n";
-    for (std::vector<std::string>::iterator it = lines.begin(); it != lines.end(); it++)
-    {
-        common.insert(common.end(), it->begin(), it->end());
-        common.push_back('\r');
-        common.push_back('\n');
+    std::string common = Response::commonResponse(static_cast<status_code_t>(statusCode), true);
+    for (std::vector<std::string>::iterator it = lines.begin(); it != lines.end(); it++) {
+        common.append(it->begin(), it->end());
+        common += "\r\n";
     }
-    std::string size = "Content-Length: " + StringUtils::intToString(body.size()) + "\r\n\r\n";
-    common.insert(common.end(), size.begin(), size.end());
+    common += "Content-Length: " + StringUtils::intToString(body.size()) + "\r\n\r\n";
 
     std::vector<unsigned char> response;
     response.assign(common.begin(), common.end());
@@ -61,105 +61,70 @@ void    Response::cgiResponse(Client & client, std::string headers,
     client.readyToRespond();
 }
 
-std::string     Response::commonResponse(status_code_t status)
-{
-    std::pair<status_code_t, std::string> statusCode = 
-                                HttpUtils::getResponseStatus(status);
 
-    std::string common = std::string("HTTP/1.1 ");
-    common += StringUtils::intToString(statusCode.first) + " " + statusCode.second + "\r\n";
-    common += "Server: webserv (Ubuntu)\r\n";
-    common += "Date: " + TimeUtils::getFormattedDate(time(NULL)) + "\r\n";
+void    Response::errorResponse(status_code_t code, Client & client) {
 
-    return (common);
-}
-
-std::string     Response::bodyHeaders(std::string extension, unsigned int size)
-{
-    std::string headers = "";
-    headers += "Content-Type: " + HttpUtils::getMimeType(extension) + "\r\n";
-    headers += "Content-Length: " + StringUtils::intToString(size) + "\r\n";
-    return headers;
-}
-
-/* void    Response::createResponse(resp_t resp)
-{
-    std::string response = commonResponse(resp.status);
-    response += bodyHeaders(resp.body, resp.extension);
-    
-    if (resp.keepAlive)
-        response += "Connection: keep-alive\r\n";
-    else
-        response += "Connection: close\r\n";
-
-    response += "\r\n";
-    if (resp.body.empty())
-        resp.rawData.assign(response.begin(), response.end());
-    else
-    {
-        resp.rawData.assign(response.begin(), response.end());
-        resp.rawData.insert(resp.rawData.end(), resp.body.begin(), resp.body.end());
-    }
-} */
-
-void    Response::errorResponse(status_code_t code, Client & client) 
-{
     client.closeClient();
-    std::pair<status_code_t, std::string> statusCode = 
-                                HttpUtils::getResponseStatus(code);
 
-	std::string error = "<html>\n<head><title>" + StringUtils::intToString(statusCode.first);
-    error += " " + statusCode.second;
-    error += "</title></head>\n<body>\n<center><h1>";
-    error += StringUtils::intToString(code);
-    error += " " + statusCode.second;
-    error += "</h1></center>\n<hr><center>webserv (Ubuntu)</center>\n</body>\n</html>\n";
+    std::vector<unsigned char> body;
 
-    std::string response = commonResponse(code);
-    response += "Connection: close\r\n";
-    response += bodyHeaders("html", error.size());
-    response += "\r\n" + error;
+
+    std::pair<status_code_t, std::string> statusCode = HttpUtils::getResponseStatus(code);
+
+    try {
+        getFileContent(client.getCorrectLocationBlock().getError(), body);
+    } catch (std::exception & e) {
+        getDefaultErrorPage(status_code_t, body);
+    }
+    
+    std::string headers = commonResponse(code, false);
+    headers += bodyHeaders("html", error.size()) + "\r\n";
 
     std::vector<unsigned char> data;
-    data.assign(response.begin(), response.end());
-
-    client.fillRawData(data);
+    data.assign(headers.begin(), headers.end());
+    client.fillRawData(headers);
+    client.fillRawData(body);
     client.readyToRespond();
 }
 
-/* void Client::getResponse()
-{
-	// TODO: Verifier avec le serverConf le path du fichier et son existence OU errorResponse(NOT_FOUND) and change / to index.html
-	// attention de bien prendre le root du bloc location (par defaut meme que serveur , mis a jour s'il existe dans le location bloc)
-	std::cout << _request;
 
-	std::vector<unsigned char> body;
-	std::string filename = _serverInfoCurr.getRoot() + "/" + _request.getPathRequest();
-	std::ifstream is(filename.c_str(), std::ifstream::binary);
+/**
+ * @brief 
+ * 
+ */
+void    Response::getResponse(std::string const & path, Client & client) {
 
-	if (is.good())
-	{
-		is.seekg(0, is.end);
-		int length = is.tellg();
-		is.seekg(0, is.beg);
+    struct stat                 stat;
+    std::vector<unsigned char>  body;
+    std::string                 headers;
 
-		char *buffer = new char[length];
-		is.read(buffer, length);
-		body = std::vector<unsigned char>(buffer, buffer + length);
-		is.close();
-		delete[] buffer;
+    bzero(&stat, sizeof(stat));
+    if (lstat(path.c_str(), &stat) == -1)
+        throw RequestError(NOT_FOUND, "Impossible to get information about path");
 
-		resp_t resp = {OK, body, _request.getExtension(), _rawData, true};
-		Response::createResponse(resp);
-		_responseReady = true;
-	}
-	else
-	{
-	}
-} */
+    if (S_ISDIR(stat.st_mode))
+        throw RequestError(INTERNAL_SERVER_ERROR, "Should open default directory file");
+        //getDirectoryStructure();
+    else
+        getFileContent(path, body);
 
-void Response::deleteResponse(const std::string &path, Client & client)
-{
+    headers = commonResponse(OK, true) + bodyHeaders(HttpUtils::getMimeType(""), body.size()) + "\r\n";
+    std::vector<unsigned char> data;
+    data.assign(headers.begin(), headers.end());
+
+    client.fillRawData(data);
+    client.fillRawData(body);
+    client.readyToRespond(); 
+}
+
+
+/**
+ * @brief 
+ * 
+ * @param path 
+ * @param client 
+ */
+void Response::deleteResponse(const std::string &path, Client & client) {
 	struct stat         stat;
 	std::string 		response;
 	
@@ -181,11 +146,95 @@ void Response::deleteResponse(const std::string &path, Client & client)
 	else
 		throw RequestError(NOT_IMPLEMENTED, "Unable to delete path");
 
-	response = commonResponse(NO_CONTENT);
-	response += "\r\n";
+	response = commonResponse(NO_CONTENT, true);
+
 	std::vector<unsigned char> data;
     data.assign(response.begin(), response.end());
     client.fillRawData(data);
     client.readyToRespond();
 }
+/******************************************************************************/
 
+/***********************
+* STATIC PRIVATE METHODS
+***********************/
+
+/**
+ * @brief 
+ * 
+ * @param status 
+ * @param alive 
+ * @return std::string 
+ */
+std::string     Response::commonResponse(status_code_t status, bool alive) {
+    std::pair<status_code_t, std::string> statusCode = HttpUtils::getResponseStatus(status);
+
+    std::string common = std::string("HTTP/1.1 ");
+    common += StringUtils::intToString(statusCode.first) + " " + statusCode.second + "\r\n";
+    common += "Server: webserv (Ubuntu)\r\n";
+    common += "Date: " + TimeUtils::getFormattedDate(time(NULL)) + "\r\n";
+    if (alive)
+        common += "Connection: keep-alive\r\n";
+    else
+        common += "Connection: close\r\n";
+
+    return (common);
+}
+
+
+/**
+ * @brief 
+ * 
+ * @param extension 
+ * @param size 
+ * @return std::string 
+ */
+std::string     Response::bodyHeaders(std::string extension, unsigned int size) {
+    std::string headers = "Content-Type: " + HttpUtils::getMimeType(extension) + "\r\n";
+    headers += "Content-Length: " + StringUtils::intToString(size) + "\r\n";
+    return headers;
+}
+
+
+/**
+ * @brief 
+ * 
+ * @param path 
+ * @param response 
+ */
+void       Response::getFileContent(std::string const & path, std::vector<unsigned char> & response) {
+
+	std::ifstream is(path.c_str(), std::ifstream::binary);
+
+	if (!is.good())
+        throw RequestError(NOT_FOUND, "File not found or impossible to read: " + path);
+
+	is.seekg(0, is.end);
+	std::streampos length = is.tellg();
+	is.seekg(0, is.beg);
+
+	char *buffer = new char[length];
+	is.read(buffer, length);
+    
+    if (!is.good())
+        throw RequestError(INTERNAL_SERVER_ERROR, "Faile while reading file: " + path);
+	is.close();
+
+    response.assign(buffer, buffer + length);
+	delete[] buffer;
+}
+
+
+void    Response::getDefaultError(status_code_t status, std::vector<unsigned char> & body) {
+
+    int code = StringUtils::intToString(status.first);
+
+	std::string error = "<html>\n<head><title>" + code;
+    error += " " + status.second;
+    error += "</title></head>\n<body>\n<center><h1>";
+    error += code;
+    error += " " + status.second;
+    error += "</h1></center>\n<hr><center>webserv (Ubuntu)</center>\n</body>\n</html>\n";
+    
+    body.assign(error.begin(), error.end());
+}

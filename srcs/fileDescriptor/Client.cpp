@@ -206,13 +206,11 @@ void Client::doOnError(uint32_t event)
 	_webServ->clearFd(_fd);
 }
 
-void Client::fillRawData(std::vector<unsigned char> const &data)
-{
-	_outputData.assign(data.begin(), data.end());
+void Client::fillRawData(std::vector<unsigned char> const &data) {
+	_outputData.insert(_outputData.end(), data.begin(), data.end());
 }
 
-void Client::readyToRespond()
-{
+void Client::readyToRespond() {
 	_responseReady = true;
 	_webServ->updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
 }
@@ -414,7 +412,7 @@ std::string Client::searchIndexFile(std::string path, std::vector<std::string> c
 
 	// otherwise check if autoindex is on
 	if (!autoindex)
-		throw RequestError(FORBIDDEN, "Autoindex is off");
+		throw RequestError(NOT_FOUND, "Autoindex is off");
 	return path;
 }
 

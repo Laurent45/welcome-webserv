@@ -17,22 +17,20 @@
 
 class Client;
 
-class Response
-{
+class Response {
+
     private:
 
-        static std::string  commonResponse(status_code_t status);
+        static std::string  commonResponse(status_code_t status, bool alive);
         static std::string  bodyHeaders(std::string extension, unsigned int size);
+        static void         getFileContent(std::string const & path, std::vector<unsigned char> & response);
+        static void         getDefaultError(status_code_t status, std::vector<unsigned char> & body);
 
     public:
-  
-        static void cgiResponse(Client & client, std::string headers,
-                                            std::vector<unsigned char> & body);
-        static void errorResponse(status_code_t code, Client & client);
-		static void deleteResponse(const std::string &path, Client & client);
+        static void     getResponse(std::string const & path, Client & client);
+        static void     cgiResponse(Client & client, std::string headers, std::vector<unsigned char> & body);
+        static void     errorResponse(status_code_t code, Client & client);
+		static void     deleteResponse(const std::string &path, Client & client);
 };
-
-
-
 
 #endif

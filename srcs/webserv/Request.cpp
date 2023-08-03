@@ -205,8 +205,12 @@ void	Request::handleHeaders(std::vector<unsigned char> & rawData) {
 		std::map<std::string, std::string>::iterator encod = _headers.find("Transfer-Encoding");
 		if (length == _headers.end() && encod == _headers.end())
 			throw RequestError(BAD_REQUEST, "Header about post body is missing");
-		if (_encode == false)
-			_bodySize = atoi(length->second.c_str()); // TODO: Check if size is an integer
+		if (_encode == false) {
+			long convert = atol(length->second.c_str());
+			if (convert <= 0)
+				throw RequestError(BAD_REQUEST, "Body size has an invalid value");
+			_bodySize = convert;
+		}
 	}
 	rawData.erase(rawData.begin(), ite + 4);
 }
