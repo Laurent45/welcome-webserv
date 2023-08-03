@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/23 18:24:01 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/31 11:32:20 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/08/03 15:10:41 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -253,7 +253,7 @@ void ServerConf::setClientBodySize(std::vector<std::string> token)
 		throw(ConfFileParseError("error client body size syntax"));
 	if (str.length() != i && str.length() != i + 1)
 		throw(ConfFileParseError("error client body size syntax"));
-	_client_body_size = atoi(token[1].erase(token[1].size() - 1).c_str());
+	_client_body_size = atoi(token[1].c_str());
 	if (str[i] && (str[i] == 'M' || str[i] == 'm'))
 		_client_body_size *= 1000000;
 	else if (str[i] && (str[i] == 'G' || str[i] == 'g'))
