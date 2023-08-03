@@ -63,7 +63,7 @@ void    Parser::parseConfFile(WebServ & webServ)
 	formatConfFile(conf_string);
 
 	int j = StringUtils::nbLines(conf_string);
-	for (int i = 0; i < j; i++){
+	for (int i = 0; i < j; i++) {
 		temp = StringUtils::trimWhitespaces(StringUtils::getLine(conf_string, i));
 		conf_string_formated += temp + checkChar(temp);
 	}
@@ -159,13 +159,11 @@ void    Parser::parseServers(std::vector<ServerConf> & serverConfs, std::string 
 		std::cout << serverConfs << std::endl;
 }
 
-void    Parser::createServerSockets(WebServ & webServ) const
-{
+void    Parser::createServerSockets(WebServ & webServ) const {
 	std::map<std::pair<std::string, int>, std::vector<ServerConf> >::const_iterator it;
 
 	it = _map.begin();
-	for (; it != _map.end(); it++)
-	{
+	for (; it != _map.end(); it++) {
 		int	socketFd, enabled = 1;
 		struct sockaddr_in sockaddr;
 		struct protoent *proto;

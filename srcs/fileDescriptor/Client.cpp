@@ -41,8 +41,7 @@ Client::Client(void)
 	  _responseReady(false),
 	  _callCgi(false),
 	  _close(false)
-{
-}
+{}
 
 Client::Client(Client const &copy)
 	: AFileDescriptor(copy),
@@ -58,11 +57,9 @@ Client::Client(Client const &copy)
 	  _responseReady(copy._responseReady),
 	  _callCgi(copy._callCgi),
 	  _close(copy._close)
-{
-}
+{}
 
-Client &Client::operator=(Client const &rhs)
-{
+Client &Client::operator=(Client const &rhs) {
 	if (this != &rhs)
 	{
 		_fd = rhs._fd;
@@ -86,10 +83,8 @@ Client &Client::operator=(Client const &rhs)
 Client::~Client() {
 	if (_cgi.getReadFd() != -1)
 		close(_cgi.getReadFd());
-	if (_cgi.getWriteFd() != -1) {
+	if (_cgi.getWriteFd() != -1) 
 		close(_cgi.getWriteFd());
-		std::cout << "Close write cgi des: " << _cgi.getWriteFd() << std::endl;
-	}
 }
 /******************************************************************************/
 
@@ -106,21 +101,18 @@ Client::Client(int fd, WebServ &webServ, Server const *server)
 	  _responseReady(false),
 	  _callCgi(false),
 	  _close(false)
-{
-}
+{}
 /******************************************************************************/
 
 /***********
  * ACCESSORS
  ************/
 
-Request const &Client::getRequest() const
-{
+Request const &Client::getRequest() const {
 	return (this->_request);
 }
 
-ServerConf const *Client::getServerConf() const
-{
+ServerConf const *Client::getServerConf() const {
 	return (this->_serverConf);
 }
 /******************************************************************************/
@@ -133,8 +125,7 @@ ServerConf const *Client::getServerConf() const
  * @brief Read data in fd and try to construct the request. While request is
  * complete retrive correct server information and update fd to EPOLLOUT
  */
-void Client::doOnRead()
-{
+void Client::doOnRead() {
 	if (_close)
 		return ;
 
@@ -151,44 +142,44 @@ void Client::doOnRead()
 
 	if (n < 0) // Try to read next time fd is NON_BLOCK and we can't check errno
 		return;
-	else if (n == 0) // Client close connection
+	if (n == 0) // Client close connection
 		return _webServ->clearFd(_fd);
-	else {
-		try {
-			handleRequest();
-		} catch (RequestUncomplete &exception) {
-			return;
-		} catch (std::exception const &exception) {
-			return handleException(exception);
-		}
-		DEBUG_COUT(_request.getHttpMethod() + " " << _request.getPathRequest());
-		_webServ->updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
+
+	try {
+		handleRequest();
+	} catch (RequestUncomplete &exception) {
+		return;
+	} catch (std::exception const &exception) {
+		return handleException(exception);
 	}
+	DEBUG_COUT(_request.getHttpMethod() + " " << _request.getPathRequest());
+	_webServ->updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
 }
 
 /**
  * @brief Try to write response in fd if is ready otherwise create response
  * @param webServ Reference to webServ
  */
-void Client::doOnWrite()
-{
-	if (_responseReady) {
-		send(_fd, &(*_outputData.begin()), _outputData.size(), 0);
-		return prepareToNextRequest();
-	}
+void Client::doOnWrite() {
 
-	try {
-		if (_callCgi)
-			return handleScript(_correctPathRequest);
-		if (_request.getHttpMethod() == "DELETE")
-			 return Response::deleteResponse(_correctPathRequest, *this);
-		if (_request.getHttpMethod() == "GET")
-			return Response::getResponse(_correctPathRequest, *this);
-		throw RequestError(METHOD_NOT_ALLOWED, "This method is not implemented: " + _request.getHttpMethod());
-	}
-	catch (std::exception &exception) {
-		handleException(exception);
-	}
+	if (!_responseReady)
+		return ;
+	
+	send(_fd, &(*_outputData.begin()), _outputData.size(), 0);
+
+	/* Clear for next request */
+	_webServ->updateEpoll(_fd, EPOLLIN, EPOLL_CTL_MOD);
+	_webServ->removeClient(_fd);
+
+	_responseReady = false;
+	_request = Request();
+	_correctPathRequest = "";
+	_cgi = Cgi();
+	_callCgi = false;
+	_startTime = 0;
+	_serverConf = NULL;
+	_location = NULL;
+	_outputData.clear();
 }
 
 /**
@@ -201,32 +192,51 @@ void Client::doOnError(uint32_t event) {
 	_webServ->clearFd(_fd);
 }
 
+
+/**
+ * @brief 
+ * 
+ * @param data 
+ */
 void Client::fillRawData(std::vector<unsigned char> const &data) {
 	_outputData.insert(_outputData.end(), data.begin(), data.end());
 }
 
+
+/**
+ * @brief 
+ * 
+ */
 void Client::readyToRespond() {
 	_responseReady = true;
 	_webServ->updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
 }
 
-void Client::handleException(std::exception const &exception)
-{
-	try
-	{
+
+/**
+ * @brief 
+ * 
+ * @param exception 
+ */
+void Client::handleException(std::exception const &exception) {
+	try {
 		RequestError error = dynamic_cast<RequestError const &>(exception);
 		DEBUG_COUT(error.getCause());
 		Response::errorResponse(error.getStatusCode(), *this);
-	}
-	catch (std::exception &exception)
-	{
+	} catch (std::exception &exception) {
 		DEBUG_COUT(exception.what());
 		Response::errorResponse(INTERNAL_SERVER_ERROR, *this);
 	}
 }
 
-bool Client::timeoutReached()
-{
+
+/**
+ * @brief 
+ * 
+ * @return true 
+ * @return false 
+ */
+bool Client::timeoutReached() {
 	bool result = (TimeUtils::getTimeOfDayMs() - _startTime) > TIMEOUT;
 	if ((TimeUtils::getTimeOfDayMs() - _startTime) > TIMEOUT) {
 
@@ -247,8 +257,12 @@ bool Client::timeoutReached()
 	return (result);
 }
 
-void	Client::closeClient()
-{
+
+/**
+ * @brief 
+ * 
+ */
+void	Client::closeClient() {
 	_close = true;
 }
 /******************************************************************************/
@@ -260,7 +274,8 @@ void	Client::closeClient()
 /**
  * @brief 
  */
-void Client::handleRequest() {
+void	Client::handleRequest() {
+
 	if (_request.getHttpMethod().empty())
 		_request.handleRequestLine(_inputData);
 
@@ -275,17 +290,8 @@ void Client::handleRequest() {
 			if (!_request.isEncoded() && _request.getBodySize() > _location->getClientBodySize())
 				throw RequestError(PAYLOAD_TOO_LARGE, "Body size too large");
 
-			if (!_callCgi) {
-				std::map<std::string, std::string>::const_iterator type;
-				type = _request.getHeaders().find("Content-Type");
-				if (type == _request.getHeaders().end())
-					throw RequestError(METHOD_NOT_ALLOWED, "Content type header missing");
-				if (type->second.compare(0, 20, "multipart/form-data;") != 0)
-					throw RequestError(METHOD_NOT_ALLOWED, "Content type: " + type->second + " is not supported");
-				_request.searchBondary();
-				_request.getUpload().setFilePath(_location->getUploadDir());
-
-			}
+			if (!_callCgi)
+				uploadRequirement();
 		}
 	}
 
@@ -295,6 +301,14 @@ void Client::handleRequest() {
 		else
 			_request.uploadFiles(_inputData);
 	}
+	
+	if (_callCgi)
+		return handleScript();
+	if (_request.getHttpMethod() == "GET")
+		return Response::getResponse(_correctPathRequest, *this);
+	if (_request.getHttpMethod() == "DELETE")
+		return Response::deleteResponse(_correctPathRequest, *this);
+	throw RequestError(METHOD_NOT_ALLOWED, "This method is not implemented: " + _request.getHttpMethod());
 }
 
 
@@ -326,8 +340,9 @@ void	Client::getCorrectServerConf() {
  * @brief 
  * @param fullPath 
  */
-void Client::handleScript(std::string const &fullPath) {
-	_cgi = Cgi(*_webServ, *this, fullPath);
+void	Client::handleScript() {
+
+	_cgi = Cgi(*_webServ, *this, _correctPathRequest);
 
 	if (_cgi.run() < 0)
 		return Response::errorResponse(INTERNAL_SERVER_ERROR, *this);
@@ -414,18 +429,19 @@ std::string Client::searchIndexFile(std::string path, std::vector<std::string> c
 
 /**
  * @brief 
+ * 
  */
-void	Client::prepareToNextRequest() {
-	_webServ->updateEpoll(_fd, EPOLLIN, EPOLL_CTL_MOD);
-	_webServ->removeClient(_fd);
+void	Client::uploadRequirement() {
 
-	_responseReady = false;
-	_request = Request();
-	_correctPathRequest = "";
-	_cgi = Cgi();
-	_callCgi = false;
-	_startTime = 0;
-	_serverConf = NULL;
-	_location = NULL;
-	_outputData.clear();
+	std::map<std::string, std::string>::const_iterator type;
+	type = _request.getHeaders().find("Content-Type");
+
+	if (type == _request.getHeaders().end())
+		throw RequestError(METHOD_NOT_ALLOWED, "Content type header missing");
+
+	if (type->second.compare(0, 20, "multipart/form-data;") != 0)
+		throw RequestError(METHOD_NOT_ALLOWED, "Content type: " + type->second + " is not supported");
+	
+	_request.searchBondary();
+	_request.getUpload().setFilePath(_location->getUploadDir());
 }

@@ -105,16 +105,14 @@ void	Server::doOnRead() {
  * @brief 
  */
 void	Server::doOnWrite()
-{
-}
+{}
 
 
 /**
  * @brief 
  * @param event 
  */
-void	Server::doOnError(uint32_t event)
-{
-	std::cout << "Client on error, event = " << event << std::endl;
+void	Server::doOnError(uint32_t event) {
+	std::cout << "Server on error, event = " << event << std::endl;
 }
 /******************************************************************************/

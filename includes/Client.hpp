@@ -52,7 +52,8 @@ class Client : public AFileDescriptor
 		void				getCorrectPathRequest();
 		std::string 		searchIndexFile(std::string path, std::vector<std::string> const &indexs, bool autoindex);
 
-		void				handleScript(std::string const & fullPath);
+		void				handleScript();
+		void				uploadRequirement();
 
 	public:
 		
@@ -77,7 +78,6 @@ class Client : public AFileDescriptor
 		void	readyToRespond();
 		void	handleException(std::exception const & exception);
 		void	closeClient();
-		void	prepareToNextRequest();
 };
 
 #endif
