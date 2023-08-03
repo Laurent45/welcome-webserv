@@ -41,13 +41,12 @@ class ServerConf
 		int									_port;
 		std::vector<std::string>			_server_name;
 		std::string							_IP;
-		std::string							_error_pages;
+		std::string							_error_page;
 		std::vector<std::string>			_index;
 		bool								_autoindex;
 		long int							_client_body_size;
 		std::map<std::string, std::string>	_cgi;
 		std::vector<Location>				_location;
-		std::string							_errorContent;
 
 
 		void	setCgi(std::vector<std::string> token);
@@ -56,7 +55,6 @@ class ServerConf
 		void	setIp(std::vector<std::string> token);
 		void	setIndex(std::vector<std::string> token);
 		void	setAutoindex(std::vector<std::string> token);
-		void	setErrorContent(std::string  const path);
 		
 		void	setError(std::vector<std::string> token);
 		void	setClientBodySize(std::vector<std::string> token);
@@ -90,7 +88,6 @@ class ServerConf
 		long int					const &getClientBodySize() const;
 		std::vector<Location>		const &getLocation() const;
 		std::map<std::string, std::string>	const &getCgi() const;
-		std::string 				const &getErrorContent() const;
 
 		void	setServerConf(const std::string &str);
 		void	addLocation(std::string str, int &count, int &flag);

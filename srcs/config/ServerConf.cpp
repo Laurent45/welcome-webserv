@@ -56,7 +56,7 @@ ServerConf::ServerConf(void)
 	  _port(8080),
 	  _server_name(),
 	  _IP("0.0.0.0"),
-	  _error_pages("error.html"),
+	  _error_page("error.html"),
 	  _autoindex(false),
 	  _client_body_size(1000000)
 {
@@ -64,7 +64,6 @@ ServerConf::ServerConf(void)
 	_index.push_back("./index.html");
 	_server_name.push_back("");
 	_cgi["php"] = "/usr/bin/php-cgi";
-	ServerConf::setErrorContent(_error_pages);
 }
 
 ServerConf::ServerConf(ServerConf const &src)
@@ -72,7 +71,7 @@ ServerConf::ServerConf(ServerConf const &src)
 	  _port(src._port),
 	  _server_name(src._server_name),
 	  _IP(src._IP),
-	  _error_pages(src._error_pages),
+	  _error_page(src._error_page),
 	  _index(src._index),
 	  _autoindex(src._autoindex),
 	  _client_body_size(src._client_body_size),
@@ -89,7 +88,7 @@ ServerConf &ServerConf::operator=(ServerConf const &src)
 		_port = src._port;
 		_server_name = src._server_name;
 		_IP = src._IP;
-		_error_pages = src._error_pages;
+		_error_page = src._error_page;
 		_index = src._index;
 		_autoindex = src._autoindex;
 		_client_body_size = src._client_body_size;
@@ -115,10 +114,9 @@ std::vector<std::string> const &ServerConf::getName() const { return (_server_na
 std::vector<std::string> const &ServerConf::getIndex() const { return (_index); }
 bool const &ServerConf::getAutoindex() const { return (_autoindex); }
 std::string const &ServerConf::getIp() const { return (_IP); }
-std::string const &ServerConf::getError() const { return (_error_pages); }
+std::string const &ServerConf::getError() const { return (_error_page); }
 long int const &ServerConf::getClientBodySize() const { return (_client_body_size); }
 std::vector<Location> const &ServerConf::getLocation() const { return (_location); }
-std::string const & ServerConf::getErrorContent() const { return (_errorContent); }
 
 void ServerConf::setRoot(std::vector<std::string> token)
 {
@@ -206,9 +204,8 @@ void ServerConf::setError(std::vector<std::string> token)
 {
 	if (token.size() != 2)
 		throw(ConfFileParseError("problem with number of arguments for error_page"));
-	_error_pages = token[1].erase(token[1].size() - 1);
-	StringUtils::addCwd(_error_pages);
-	this->setErrorContent(_error_pages);
+	_error_page = token[1].erase(token[1].size() - 1);
+	StringUtils::addCwd(_error_page);
 }
 
 void ServerConf::setIndex(std::vector<std::string> token)
@@ -264,20 +261,6 @@ void ServerConf::setClientBodySize(std::vector<std::string> token)
 	else if (str[i] && (str[i] == 'k' || str[i] == 'K'))
 		_client_body_size *= 1000;
 }
-
-void	ServerConf::setErrorContent(std::string const path){
-	std::ifstream fileStream(path.c_str()); 
-	if (fileStream) {
-		std::stringstream buffer;
-		buffer << fileStream.rdbuf();
-		_errorContent = buffer.str();
-		fileStream.close();
-	} else {
-	throw std::runtime_error("Impossible d'ouvrir le fichier : " + path);
-	}
-}
-
-
 /******************************************************************************/
 
 /****************
@@ -350,7 +333,6 @@ void ServerConf::setServerConf(const std::string &str)
 		Location loc(getPort(), getCgi(), getAutoindex(), getIndex(), getRoot(), getClientBodySize(), "/");
 		this->_location.push_back(loc);
 	} //cree un location bloc / si inexistant
-	setErrorContent(getError());
 }
 
 /**

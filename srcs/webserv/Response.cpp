@@ -28,8 +28,7 @@
  * STATIC PUBLIC METHODS
  ***********************/
 
-void Response::cgiResponse(Client &client, std::string headers, std::vector<unsigned char> &body)
-{
+void Response::cgiResponse(Client &client, std::string headers, std::vector<unsigned char> &body) {
 
     int statusCode = 200;
 
@@ -61,21 +60,24 @@ void Response::cgiResponse(Client &client, std::string headers, std::vector<unsi
     client.readyToRespond();
 }
 
+
 void Response::errorResponse(status_code_t code, Client &client) {
 
     client.closeClient();
 
-    std::string const &body = client.getServerConf()->getErrorContent();
+    std::vector<unsigned char> error;
+
+    getFileContent(client.getServerConf()->getError(), error);
     std::pair<status_code_t, std::string> statusCode = HttpUtils::getResponseStatus(code);
 
     std::string headers = commonResponse(code, false);
-    headers += bodyHeaders("html", body.size()) + "\r\n";
+    headers += bodyHeaders("html", error.size()) + "\r\n";
 
     std::vector<unsigned char> data;
     data.assign(headers.begin(), headers.end());
-    data.insert(data.end(), body.begin(), body.end());
 
     client.fillRawData(data);
+    client.fillRawData(error);
     client.readyToRespond();
 }
 

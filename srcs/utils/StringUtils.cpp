@@ -307,19 +307,19 @@ std::string StringUtils::intToString(int num)
   return ss.str();
 }
 
-void	StringUtils::addCwd(std::string &path)
-{
-	if(!path.compare(0, 2, "./"))
-	{
+void	StringUtils::addCwd(std::string &path) {
+	if (!path.compare(0, 2, "./")) {
 		char wd[FILENAME_MAX];
-		if(getcwd(wd, sizeof(wd)) != NULL)
-		{
-			std::string cwd(wd);
-			path = cwd + path.erase(0,1);
-		} 
-		else {
-			std::cerr << "Error getting current directory." << std::endl;
-		}
+
+		if(getcwd(wd, sizeof(wd)) == NULL)
+			throw ConfFileParseError("Impossible to get the path for error file");
+
+		std::string cwd(wd);
+		path = cwd + path.erase(0,1);
+
+	} else {
+		if (path[0] != '/')
+			path = "/" + path;		
 	}
 }
 
