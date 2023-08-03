@@ -93,28 +93,23 @@ Cgi::Cgi(WebServ &webServ, Client &client, std::string const &fullPath)
  * ACCESSORS
  ************/
 
-int Cgi::getReadFd() const
-{
+int Cgi::getReadFd() const {
     return _fdRead;
 }
 
-int Cgi::getWriteFd() const
-{
+int Cgi::getWriteFd() const {
     return _fdWrite;
 }
 
-int Cgi::getPidChild() const
-{
+int Cgi::getPidChild() const {
     return _pidChild;
 }
 
-void    Cgi::setReadFd(int fd)
-{
+void    Cgi::setReadFd(int fd) {
     this->_fdRead = fd;
 }
 
-void    Cgi::setWriteFd(int fd)
-{
+void    Cgi::setWriteFd(int fd) {
     this->_fdWrite = fd;
 }
 /******************************************************************************/
@@ -127,8 +122,7 @@ void    Cgi::setWriteFd(int fd)
  * @brief Run cgi script
  * @return
  */
-int Cgi::run()
-{
+int Cgi::run() {
     int pipeToCgi[2];
     int pipeFromCgi[2];
 
@@ -143,20 +137,19 @@ int Cgi::run()
     _fdRead = pipeFromCgi[0];
     _fdWrite = pipeToCgi[1];
 
-    if (fcntl(_fdRead, F_SETFL, O_NONBLOCK) < 0)
-    {
+    if (fcntl(_fdRead, F_SETFL, O_NONBLOCK) < 0) {
         std::cerr << "Fcntl error" << std::endl;
         return (-1);
     }
     return (0);
 }
 
+
 /**
  * @brief Read data from cgi and construct response if EOF is reached
  * @param webServ
  */
-void Cgi::doOnRead()
-{
+void Cgi::doOnRead() {
     unsigned char buffer[BUFFER_SIZE];
     ssize_t n;
 
@@ -164,18 +157,17 @@ void Cgi::doOnRead()
         _rawData.insert(_rawData.end(), buffer, buffer + n);
     // TODO: Always check the body size    
 
-    if (n == 0)
-    {
+    if (n == 0) {
+        std::cout << "TEst" << std::endl;
         _webServ->updateEpoll(_fdRead, 0, EPOLL_CTL_DEL);
 		_webServ->removeFd(_fdRead);
         close(_fdRead);
         _fdRead = -1;
 
         try {
-	        unsigned char src[] = {'\r', '\n', '\r', '\n'};
 	        std::vector<unsigned char>::iterator ite;
+	        ite = std::search(_rawData.begin(), _rawData.end(), HttpUtils::CRLFCRLF, HttpUtils::CRLFCRLF + 4);
 
-	        ite = std::search(_rawData.begin(), _rawData.end(), src, src + 4);
 	        if (_rawData.empty() || ite == _rawData.end())
 		        throw RequestError(INTERNAL_SERVER_ERROR, "Failed to read data from cgi");
 
@@ -193,8 +185,7 @@ void Cgi::doOnRead()
  * @brief Send data to CGI and handle fd
  * @param webServ
  */
-void Cgi::doOnWrite()
-{
+void Cgi::doOnWrite() {
     std::vector<unsigned char> body = _clientInfo->getRequest().getMessageBody();
 
     if (write(_fdWrite, &body[0], body.size()) == -1)
@@ -208,14 +199,14 @@ void Cgi::doOnWrite()
     _webServ->updateEpoll(_fdRead, EPOLLIN, EPOLL_CTL_MOD);
 }
 
+
 /**
  * @brief
  * @param webServ
  * @param event
  */
-void Cgi::doOnError(uint32_t event)
-{
-    std::cout << "Cgi on error, event = " << event << std::endl;
+void Cgi::doOnError(uint32_t event) {
+    (void) event;
     _pidChild = -1;
     this->doOnRead();
 }
@@ -225,24 +216,29 @@ void Cgi::doOnError(uint32_t event)
  * PRIVATE METHODS
  *****************/
 
-int Cgi::initChildProcess(int toCgi[2], int fromCgi[2])
-{
+/**
+ * @brief 
+ * 
+ * @param toCgi 
+ * @param fromCgi 
+ * @return int 
+ */
+int Cgi::initChildProcess(int toCgi[2], int fromCgi[2]) {
     int pid;
 
-    if (pipe(toCgi) < 0)
-    {
+    if (pipe(toCgi) < 0) {
         DEBUG_COUT(strerror(errno));
         return (-1);
     }
-    if (pipe(fromCgi) < 0)
-    {
+
+    if (pipe(fromCgi) < 0) {
         DEBUG_COUT(strerror(errno));
         close(toCgi[0]);
         close(toCgi[1]);
+        return (-1);
     }
 
-    if ((pid = fork()) < 0)
-    {
+    if ((pid = fork()) < 0) {
         DEBUG_COUT(strerror(errno));
         close(fromCgi[0]);
         close(fromCgi[1]);
@@ -250,11 +246,19 @@ int Cgi::initChildProcess(int toCgi[2], int fromCgi[2])
         close(toCgi[1]);
         return (-1);
     }
+
     return (pid);
 }
 
-void Cgi::runChildProcess(int pipeToCgi[2], int pipeFromCgi[2])
-{
+
+/**
+ * @brief 
+ * 
+ * @param pipeToCgi 
+ * @param pipeFromCgi 
+ */
+void Cgi::runChildProcess(int pipeToCgi[2], int pipeFromCgi[2]) {
+
     std::string cgiPath = _clientInfo->getServerConf()->getCgi().find("php")->second;
     char *cgiPathCopy = new char[cgiPath.size() + 1];
     strcpy(cgiPathCopy, cgiPath.c_str());
@@ -290,8 +294,15 @@ void Cgi::runChildProcess(int pipeToCgi[2], int pipeFromCgi[2])
     exit(EXIT_FAILURE);
 }
 
-char **Cgi::mapCgiParams(std::string const & script)
-{
+
+/**
+ * @brief 
+ * 
+ * @param script 
+ * @return char** 
+ */
+char **Cgi::mapCgiParams(std::string const & script) {
+
     ServerConf const * serverInfo = _clientInfo->getServerConf();
     Request const &request = _clientInfo->getRequest();
     std::map<std::string, std::string> const &headers = request.getHeaders();
@@ -323,8 +334,7 @@ char **Cgi::mapCgiParams(std::string const & script)
     char *var = NULL;
     int i = 0;
 
-    while (i < 20)
-    {
+    while (i < 20) {
         var = new char[tab[i].size() + 1];
         std::strcpy(var, tab[i].c_str());
         env[i] = var;
@@ -332,8 +342,7 @@ char **Cgi::mapCgiParams(std::string const & script)
     }
 
     std::map<std::string, std::string>::const_iterator it = headers.begin();
-    for (it = headers.begin(); it != headers.end(); it++)
-    {
+    for (it = headers.begin(); it != headers.end(); it++) {
         std::string headerName = it->first;
         std::replace(headerName.begin(), headerName.end(), '-', '_');
         std::for_each(headerName.begin(), headerName.end(), toupper);
@@ -343,12 +352,18 @@ char **Cgi::mapCgiParams(std::string const & script)
         env[i] = var;
         i++;
     }
+
     env[i] = NULL;
     return (env);
 }
 
-void    Cgi::processCgiResponse()
-{
+
+/**
+ * @brief 
+ * 
+ */
+void    Cgi::processCgiResponse() {
+
 	unsigned char src[] = {'\r', '\n', '\r', '\n'};
 	std::vector<unsigned char>::iterator ite;
 
