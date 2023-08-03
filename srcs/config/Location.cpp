@@ -311,7 +311,8 @@ void Location::setReturn(std::vector<std::string> token)
 		_return[val] = token[2].erase(token[2].size() - 1);
 }
 
-/**
+/*
+		{}*
  * @brief Checks if the location directive are part of location block
  *
  * @param token
