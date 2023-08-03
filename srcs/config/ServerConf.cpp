@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/23 18:24:01 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/03 15:10:41 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/08/03 17:54:03 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -274,22 +274,6 @@ void	ServerConf::setErrorContent(std::string const path){
 	}
 }
 
-void 	ServerConf::setFolderContent(std::string const path){
-	std::ifstream fileStream(path.c_str()); 
-	if (fileStream) {
-		std::stringstream buffer;
-		buffer << fileStream.rdbuf();
-		_folderContent = buffer.str();
-		fileStream.close();
-	} 
-	else {
-	throw std::runtime_error("Impossible d'ouvrir le fichier : " + path);
-	}
-}
-
-
-
-
 
 /******************************************************************************/
 
@@ -360,20 +344,10 @@ void ServerConf::setServerConf(const std::string &str)
 			addLocation(str, count, flag);
 	}
 	if (!flag){
-		Location loc(getPort(), getCgi(), getAutoindex(), getIndex(), getRoot(), getClientBodySize(), getError(), "/");
+		Location loc(getPort(), getCgi(), getAutoindex(), getIndex(), getRoot(), getClientBodySize(), "/");
 		this->_location.push_back(loc);
 	} //cree un location bloc / si inexistant
 	setErrorContent(getError());
-
-	char wd[FILENAME_MAX];
-	if(getcwd(wd, sizeof(wd)) != NULL)
-	{
-		std::string cwd(wd);
-		std::string str2(cwd + "/folder.html");
-		setFolderContent(str2);}
-		else {
-			std::cerr << "Error getting current directory." << std::endl;	
-	}
 }
 
 /**

@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/23 18:12:31 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/25 02:33:33 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/08/03 17:52:10 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,8 +48,6 @@ class ServerConf
 		std::map<std::string, std::string>	_cgi;
 		std::vector<Location>				_location;
 		std::string							_errorContent;
-		std::string							_folderContent;
-
 
 		void	setCgi(std::vector<std::string> token);
 		void	setPort(std::vector<std::string> token);
@@ -58,7 +56,6 @@ class ServerConf
 		void	setIndex(std::vector<std::string> token);
 		void	setAutoindex(std::vector<std::string> token);
 		void	setErrorContent(std::string  const path);
-		void 	setFolderContent(std::string const path);
 		
 		void	setError(std::vector<std::string> token);
 		void	setClientBodySize(std::vector<std::string> token);
@@ -93,7 +90,6 @@ class ServerConf
 		std::vector<Location>		const &getLocation() const;
 		std::map<std::string, std::string>	const &getCgi() const;
 		std::string 				const &getErrorContent() const;
-		std::string 				const &getFolderContent() const;
 
 		void	setServerConf(const std::string &str);
 		void	addLocation(std::string str, int &count, int &flag);
