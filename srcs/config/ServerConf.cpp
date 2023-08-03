@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerConf.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/23 18:24:01 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/03 16:21:31 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/03 19:22:49 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,9 +61,10 @@ ServerConf::ServerConf(void)
 	  _client_body_size(1000000)
 {
 	_index.push_back("index");
-	_index.push_back("index.html");
+	_index.push_back("./index.html");
 	_server_name.push_back("");
 	_cgi["php"] = "/usr/bin/php-cgi";
+	ServerConf::setErrorContent(_error_pages);
 }
 
 ServerConf::ServerConf(ServerConf const &src)
@@ -207,6 +208,7 @@ void ServerConf::setError(std::vector<std::string> token)
 		throw(ConfFileParseError("problem with number of arguments for error_page"));
 	_error_pages = token[1].erase(token[1].size() - 1);
 	StringUtils::addCwd(_error_pages);
+	this->setErrorContent(_error_pages);
 }
 
 void ServerConf::setIndex(std::vector<std::string> token)
@@ -274,22 +276,6 @@ void	ServerConf::setErrorContent(std::string const path){
 	throw std::runtime_error("Impossible d'ouvrir le fichier : " + path);
 	}
 }
-
-void 	ServerConf::setFolderContent(std::string const path){
-	std::ifstream fileStream(path.c_str()); 
-	if (fileStream) {
-		std::stringstream buffer;
-		buffer << fileStream.rdbuf();
-		_folderContent = buffer.str();
-		fileStream.close();
-	} 
-	else {
-	throw std::runtime_error("Impossible d'ouvrir le fichier : " + path);
-	}
-}
-
-
-
 
 
 /******************************************************************************/
@@ -361,20 +347,10 @@ void ServerConf::setServerConf(const std::string &str)
 			addLocation(str, count, flag);
 	}
 	if (!flag){
-		Location loc(getPort(), getCgi(), getAutoindex(), getIndex(), getRoot(), getClientBodySize(), getError(), "/");
+		Location loc(getPort(), getCgi(), getAutoindex(), getIndex(), getRoot(), getClientBodySize(), "/");
 		this->_location.push_back(loc);
 	} //cree un location bloc / si inexistant
 	setErrorContent(getError());
-
-	char wd[FILENAME_MAX];
-	if(getcwd(wd, sizeof(wd)) != NULL)
-	{
-		std::string cwd(wd);
-		std::string str2(cwd + "/folder.html");
-		setFolderContent(str2);}
-		else {
-			std::cerr << "Error getting current directory." << std::endl;	
-	}
 }
 
 /**
