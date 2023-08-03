@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Location.hpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/23 18:18:12 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/02 10:23:08 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/03 18:18:19 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,7 +27,6 @@ enum location_instruction_t {
 	UPLOAD_DIR,
 	RETURN,
 	L_CLIENT_MAX_BODY_SIZE,
-	L_ERROR_PAGE,
 	URI,
 	TOTAL_LOCATION_INSTRUCTIONS
 };
@@ -45,7 +44,6 @@ class Location
 		std::string							_upload_dir;
 		std::map<int, std::string>			_return;
 		size_t								_client_body_size;
-		std::string							_error_pages;
 		std::string							_uri;
 
 
@@ -61,7 +59,6 @@ class Location
 		void	setUploadDir(std::vector<std::string> token);
 		void	setCgi(std::vector<std::string> token);
 		void	setClientBodySize(std::vector<std::string> token);
-		void	setErrorPages(std::vector<std::string> token);
 		typedef void (Location::*loc_func)(std::vector<std::string> );
 		void init_vector_loc_fct(std::vector<loc_func> &funcs);
 
@@ -73,9 +70,9 @@ class Location
 		~Location();
 
 		Location(int port, std::map<std::string, std::string>	cgi, bool autoindex,
-			std::vector<std::string> index, std::string locRoot, int client_body_size, std::string error_pages);
+			std::vector<std::string> index, std::string locRoot, int client_body_size);
 		Location(int port, std::map<std::string, std::string>	cgi, bool autoindex,
-			std::vector<std::string> index, std::string locRoot, int client_body_size, std::string error_pages, std::string uri);
+			std::vector<std::string> index, std::string locRoot, int client_body_size, std::string uri);
 
 		void	setLocation(const std::string &str,  int &count, int &flag);
 		void	parseLocation(std::string &line);
@@ -93,7 +90,6 @@ class Location
 		std::string							const &getLocRoot() const;
 		std::string							const &getUploadDir() const;
 		size_t								const &getClientBodySize() const;
-		std::string							const &getError() const;
 		std::map<std::string, std::string>	const &getCgi() const;
 		
 		struct location_instruction_tab_entry_t 

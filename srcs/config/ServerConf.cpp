@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerConf.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/23 18:24:01 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/03 16:21:31 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/03 18:20:02 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -361,7 +361,7 @@ void ServerConf::setServerConf(const std::string &str)
 			addLocation(str, count, flag);
 	}
 	if (!flag){
-		Location loc(getPort(), getCgi(), getAutoindex(), getIndex(), getRoot(), getClientBodySize(), getError(), "/");
+		Location loc(getPort(), getCgi(), getAutoindex(), getIndex(), getRoot(), getClientBodySize(), "/");
 		this->_location.push_back(loc);
 	} //cree un location bloc / si inexistant
 	setErrorContent(getError());

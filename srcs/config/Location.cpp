@@ -21,35 +21,32 @@ const Location::location_instruction_tab_entry_t	Location::LOCATION_INSTRUCTIONS
 	{UPLOAD_DIR, "upload_dir"},
 	{RETURN,"return"},
 	{L_CLIENT_MAX_BODY_SIZE, "client_max_body_size"},
-	{L_ERROR_PAGE, "error_page"},
 	{URI, "uri"},
 };
 /******************************************************************************/
 
 
 Location::Location(int port, std::map<std::string, std::string> cgi, bool autoindex,
-	std::vector<std::string> index, std::string root, int client_body_size, std::string error_pages)
+	std::vector<std::string> index, std::string root, int client_body_size)
 	: _port(port),
 	  _locRoot(root),
 	  _index(index),
 	  _cgi(cgi),
 	  _autoindex(autoindex),
-	  _client_body_size(client_body_size),
-	  _error_pages(error_pages)
+	  _client_body_size(client_body_size)
 	{
 		_allow_method.push_back("GET");
 		_upload_dir = "";
 	}
 
 Location::Location(int port, std::map<std::string, std::string> cgi, bool autoindex,
-	std::vector<std::string> index, std::string root, int client_body_size, std::string error_pages, std::string uri)
+	std::vector<std::string> index, std::string root, int client_body_size, std::string uri)
 	: _port(port),
 	  _locRoot(root),
 	  _index(index),
 	  _cgi(cgi),
 	  _autoindex(autoindex),
 	  _client_body_size(client_body_size),
-	  _error_pages(error_pages),
 	  _uri(uri)
 	{
 		_allow_method.push_back("GET");
@@ -69,7 +66,6 @@ Location::Location(const Location &src)
 	  _upload_dir(src._upload_dir),
 	  _return(src._return),
 	  _client_body_size(src._client_body_size),
-	  _error_pages(src._error_pages),
 	  _uri(src._uri)
 {}
 
@@ -86,7 +82,6 @@ Location &Location::operator=(const Location &src)
 		_upload_dir = src._upload_dir;
 		_return = src._return;
 		_client_body_size = src._client_body_size;
-		_error_pages = src._error_pages;
 		_uri = src._uri;
 	}
 
@@ -108,7 +103,6 @@ std::string const &Location::getLocRoot() const { return _locRoot; }
 std::string const &Location::getUploadDir() const { return _upload_dir; }
 std::map<std::string, std::string> const &Location::getCgi() const { return _cgi; }
 size_t	const &Location::getClientBodySize() const { return (_client_body_size); }
-std::string const &Location::getError() const { return (_error_pages); }
 
 void Location::setLocation(const std::string &str, int &count, int &flag)
 {
@@ -148,7 +142,6 @@ void Location::init_vector_loc_fct(std::vector<loc_func> &funcs)
 	funcs.push_back(&Location::setUploadDir);
 	funcs.push_back(&Location::setReturn);
 	funcs.push_back(&Location::setClientBodySize);
-	funcs.push_back(&Location::setErrorPages);
 }
 
 void Location::parseLocation(std::string &line)
@@ -263,13 +256,7 @@ void Location::setCgi(std::vector<std::string> token)
 	_cgi.clear();
 	_cgi.insert(std::pair<std::string, std::string>(token[1], token[2].erase(token[2].size() - 1)));
 }
-void Location::setErrorPages(std::vector<std::string> token)
-{
-	if (token.size() != 2)
-		throw(ConfFileParseError("Location bloc : problem with number of arguments for error_page"));
-	_error_pages = token[1].erase(token[1].size() - 1);
-	StringUtils::addCwd(_error_pages);
-}
+
 void Location::setClientBodySize(std::vector<std::string> token)
 {
 	if (token.size() > 2)
@@ -363,8 +350,6 @@ std::ostream &operator<<(std::ostream &o, Location const &i)
 	}
 	if (i.getClientBodySize() > 0)
 		o << "    clientMaxBodySize		=	[" << i.getClientBodySize() << "]" << std::endl;
-	if (i.getError().empty() == false)
-		o << "    errorPage			=	[" << i.getError() << "]" << std::endl;
 	return (o);
 };
 
