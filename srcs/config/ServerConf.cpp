@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerConf.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/23 18:24:01 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/31 11:32:20 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/08/03 16:21:31 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -117,6 +117,7 @@ std::string const &ServerConf::getIp() const { return (_IP); }
 std::string const &ServerConf::getError() const { return (_error_pages); }
 long int const &ServerConf::getClientBodySize() const { return (_client_body_size); }
 std::vector<Location> const &ServerConf::getLocation() const { return (_location); }
+std::string const & ServerConf::getErrorContent() const { return (_errorContent); }
 
 void ServerConf::setRoot(std::vector<std::string> token)
 {

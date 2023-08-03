@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/03 09:40:44 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/08/03 17:53:34 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -180,17 +180,13 @@ void Client::doOnWrite()
 	try {
 		if (_callCgi)
 			return handleScript(_correctPathRequest);
-		if (this->getRequest().getHttpMethod() == "DELETE")
+		if (_request.getHttpMethod() == "DELETE")
 			 return Response::deleteResponse(_correctPathRequest, *this);
-		throw RequestError(METHOD_NOT_ALLOWED, "Should implement GET POST");
-
-		/*if (method == "GET")
-			return Response::getResponse(autoindex);
-		if (method == "POST")
-			return Response::postResponse(uploadDir);*/
+		if (_request.getHttpMethod() == "GET")
+			return Response::getResponse(_correctPathRequest, *this);
+		throw RequestError(METHOD_NOT_ALLOWED, "This method is not implemented: " + _request.getHttpMethod());
 	}
-	catch (std::exception &exception)
-	{
+	catch (std::exception &exception) {
 		handleException(exception);
 	}
 }
@@ -200,8 +196,7 @@ void Client::doOnWrite()
  * @param webServ
  * @param event
  */
-void Client::doOnError(uint32_t event)
-{
+void Client::doOnError(uint32_t event) {
 	DEBUG_COUT("Client on error: " + StringUtils::intToString(event));
 	_webServ->clearFd(_fd);
 }

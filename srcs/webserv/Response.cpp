@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Response.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 19:19:11 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/03 10:44:31 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/08/03 16:56:03 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,17 +21,15 @@
 #include <sstream>
 #include <fstream>
 #include <algorithm> // search
-#include <cstring> // strncmp
-#include <cstdlib> // atoi
-
-
-
+#include <cstring>   // strncmp
+#include <cstdlib>   // atoi
 
 /***********************
-* STATIC PUBLIC METHODS
-***********************/
+ * STATIC PUBLIC METHODS
+ ***********************/
 
-void    Response::cgiResponse(Client & client, std::string headers, std::vector<unsigned char> & body) {
+void Response::cgiResponse(Client &client, std::string headers, std::vector<unsigned char> &body)
+{
 
     int statusCode = 200;
 
@@ -39,15 +37,17 @@ void    Response::cgiResponse(Client & client, std::string headers, std::vector<
 
     std::string statusLine = lines[0];
     std::string cmp = "Status: ";
-    if (std::strncmp(cmp.c_str(), statusLine.c_str(), cmp.size()) == 0) {
+    if (std::strncmp(cmp.c_str(), statusLine.c_str(), cmp.size()) == 0)
+    {
         statusCode = std::atoi(statusLine.substr(cmp.size() - 1, 4).c_str());
         statusCode = HttpUtils::getResponseStatus(static_cast<status_code_t>(statusCode)).first;
         if (statusCode >= 400)
             throw RequestError(static_cast<status_code_t>(statusCode), "Cgi error response status");
     }
-    
+
     std::string common = Response::commonResponse(static_cast<status_code_t>(statusCode), true);
-    for (std::vector<std::string>::iterator it = lines.begin(); it != lines.end(); it++) {
+    for (std::vector<std::string>::iterator it = lines.begin(); it != lines.end(); it++)
+    {
         common.append(it->begin(), it->end());
         common += "\r\n";
     }
@@ -61,42 +61,34 @@ void    Response::cgiResponse(Client & client, std::string headers, std::vector<
     client.readyToRespond();
 }
 
-
-void    Response::errorResponse(status_code_t code, Client & client) {
+void Response::errorResponse(status_code_t code, Client &client) {
 
     client.closeClient();
 
-    std::vector<unsigned char> body;
-
-
+    std::string const &body = client.getServerConf()->getErrorContent();
     std::pair<status_code_t, std::string> statusCode = HttpUtils::getResponseStatus(code);
 
-    try {
-        getFileContent(client.getCorrectLocationBlock().getError(), body);
-    } catch (std::exception & e) {
-        getDefaultErrorPage(status_code_t, body);
-    }
-    
     std::string headers = commonResponse(code, false);
-    headers += bodyHeaders("html", error.size()) + "\r\n";
+    headers += bodyHeaders("html", body.size()) + "\r\n";
 
     std::vector<unsigned char> data;
     data.assign(headers.begin(), headers.end());
-    client.fillRawData(headers);
-    client.fillRawData(body);
+    data.insert(data.end(), body.begin(), body.end());
+
+    client.fillRawData(data);
     client.readyToRespond();
 }
 
-
 /**
- * @brief 
- * 
+ * @brief
+ *
  */
-void    Response::getResponse(std::string const & path, Client & client) {
+void Response::getResponse(std::string const &path, Client &client)
+{
 
-    struct stat                 stat;
-    std::vector<unsigned char>  body;
-    std::string                 headers;
+    struct stat stat;
+    std::vector<unsigned char> body;
+    std::string headers;
 
     bzero(&stat, sizeof(stat));
     if (lstat(path.c_str(), &stat) == -1)
@@ -104,51 +96,53 @@ void    Response::getResponse(std::string const & path, Client & client) {
 
     if (S_ISDIR(stat.st_mode))
         throw RequestError(INTERNAL_SERVER_ERROR, "Should open default directory file");
-        //getDirectoryStructure();
+    // getDirectoryStructure();
     else
         getFileContent(path, body);
 
-    headers = commonResponse(OK, true) + bodyHeaders(HttpUtils::getMimeType(""), body.size()) + "\r\n";
+    headers = commonResponse(OK, true) + bodyHeaders("html", body.size()) + "\r\n";
     std::vector<unsigned char> data;
     data.assign(headers.begin(), headers.end());
 
     client.fillRawData(data);
     client.fillRawData(body);
-    client.readyToRespond(); 
+    client.readyToRespond();
 }
 
-
 /**
- * @brief 
- * 
- * @param path 
- * @param client 
+ * @brief
+ *
+ * @param path
+ * @param client
  */
-void Response::deleteResponse(const std::string &path, Client & client) {
-	struct stat         stat;
-	std::string 		response;
-	
+void Response::deleteResponse(const std::string &path, Client &client)
+{
+    struct stat stat;
+    std::string response;
+
     bzero(&stat, sizeof(struct stat));
     if (lstat(path.c_str(), &stat) == -1)
-		throw RequestError(NOT_FOUND, "Impossible to delete path");
+        throw RequestError(NOT_FOUND, "Impossible to delete path");
 
-    if (S_ISDIR(stat.st_mode) == true && *(--path.end()) != '/') 
+    if (S_ISDIR(stat.st_mode) == true && *(--path.end()) != '/')
         throw RequestError(CONFLICT, "Conflict deleting path");
-		
-    if (S_ISREG(stat.st_mode) || S_ISLNK(stat.st_mode)){
-        if(unlink(path.c_str()) == -1)
-			throw RequestError(FORBIDDEN, "No access authorisation to path");
-	}
-    else if (S_ISDIR(stat.st_mode)){
-        if (FileUtils::_removeDir(path.c_str()) == -1)
-			throw RequestError(FORBIDDEN, "No access authorisation to path");
+
+    if (S_ISREG(stat.st_mode) || S_ISLNK(stat.st_mode))
+    {
+        if (unlink(path.c_str()) == -1)
+            throw RequestError(FORBIDDEN, "No access authorisation to path");
     }
-	else
-		throw RequestError(NOT_IMPLEMENTED, "Unable to delete path");
+    else if (S_ISDIR(stat.st_mode))
+    {
+        if (FileUtils::_removeDir(path.c_str()) == -1)
+            throw RequestError(FORBIDDEN, "No access authorisation to path");
+    }
+    else
+        throw RequestError(NOT_IMPLEMENTED, "Unable to delete path");
 
-	response = commonResponse(NO_CONTENT, true);
+    response = commonResponse(NO_CONTENT, true);
 
-	std::vector<unsigned char> data;
+    std::vector<unsigned char> data;
     data.assign(response.begin(), response.end());
     client.fillRawData(data);
     client.readyToRespond();
@@ -156,17 +150,18 @@ void Response::deleteResponse(const std::string &path, Client & client) {
 /******************************************************************************/
 
 /***********************
-* STATIC PRIVATE METHODS
-***********************/
+ * STATIC PRIVATE METHODS
+ ***********************/
 
 /**
- * @brief 
- * 
- * @param status 
- * @param alive 
- * @return std::string 
+ * @brief
+ *
+ * @param status
+ * @param alive
+ * @return std::string
  */
-std::string     Response::commonResponse(status_code_t status, bool alive) {
+std::string Response::commonResponse(status_code_t status, bool alive)
+{
     std::pair<status_code_t, std::string> statusCode = HttpUtils::getResponseStatus(status);
 
     std::string common = std::string("HTTP/1.1 ");
@@ -181,60 +176,46 @@ std::string     Response::commonResponse(status_code_t status, bool alive) {
     return (common);
 }
 
-
 /**
- * @brief 
- * 
- * @param extension 
- * @param size 
- * @return std::string 
+ * @brief
+ *
+ * @param extension
+ * @param size
+ * @return std::string
  */
-std::string     Response::bodyHeaders(std::string extension, unsigned int size) {
+std::string Response::bodyHeaders(std::string extension, unsigned int size)
+{
     std::string headers = "Content-Type: " + HttpUtils::getMimeType(extension) + "\r\n";
     headers += "Content-Length: " + StringUtils::intToString(size) + "\r\n";
     return headers;
 }
 
-
 /**
- * @brief 
- * 
- * @param path 
- * @param response 
+ * @brief
+ *
+ * @param path
+ * @param response
  */
-void       Response::getFileContent(std::string const & path, std::vector<unsigned char> & response) {
+void Response::getFileContent(std::string const &path, std::vector<unsigned char> &response)
+{
 
-	std::ifstream is(path.c_str(), std::ifstream::binary);
+    std::ifstream is(path.c_str(), std::ifstream::binary);
 
-	if (!is.good())
+    if (!is.good())
         throw RequestError(NOT_FOUND, "File not found or impossible to read: " + path);
 
-	is.seekg(0, is.end);
-	std::streampos length = is.tellg();
-	is.seekg(0, is.beg);
+    is.seekg(0, is.end);
+    std::streampos length = is.tellg();
+    is.seekg(0, is.beg);
 
-	char *buffer = new char[length];
-	is.read(buffer, length);
-    
+    char *buffer = new char[length];
+    is.read(buffer, length);
+
     if (!is.good())
         throw RequestError(INTERNAL_SERVER_ERROR, "Faile while reading file: " + path);
-	is.close();
+
+    is.close();
 
     response.assign(buffer, buffer + length);
-	delete[] buffer;
-}
-
-
-void    Response::getDefaultError(status_code_t status, std::vector<unsigned char> & body) {
-
-    int code = StringUtils::intToString(status.first);
-
-	std::string error = "<html>\n<head><title>" + code;
-    error += " " + status.second;
-    error += "</title></head>\n<body>\n<center><h1>";
-    error += code;
-    error += " " + status.second;
-    error += "</h1></center>\n<hr><center>webserv (Ubuntu)</center>\n</body>\n</html>\n";
-    
-    body.assign(error.begin(), error.end());
+    delete[] buffer;
 }
