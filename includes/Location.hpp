@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Location.hpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/23 18:18:12 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/27 13:50:35 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/08/02 10:23:08 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,7 +44,7 @@ class Location
 		bool								_autoindex;
 		std::string							_upload_dir;
 		std::map<int, std::string>			_return;
-		long int							_client_body_size;
+		size_t								_client_body_size;
 		std::string							_error_pages;
 		std::string							_uri;
 
@@ -92,7 +92,7 @@ class Location
 		std::vector<std::string>			const &getAllowMethod() const;
 		std::string							const &getLocRoot() const;
 		std::string							const &getUploadDir() const;
-		long int							const &getClientBodySize() const;
+		size_t								const &getClientBodySize() const;
 		std::string							const &getError() const;
 		std::map<std::string, std::string>	const &getCgi() const;
 		

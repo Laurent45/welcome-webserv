@@ -296,12 +296,12 @@ char **Cgi::mapCgiParams(std::string const & script)
     Request const &request = _clientInfo->getRequest();
     std::map<std::string, std::string> const &headers = request.getHeaders();
 
-    std::string tab[19] = {
+    std::string tab[20] = {
         std::string("AUTH_TYPE="),
         std::string("CONTENT_LENGTH=") + ((headers.find("Content-Length") != headers.end()) ? headers.find("Content-Length")->second : ""),
         std::string("CONTENT_TYPE=") + (headers.find("Content-Type") != headers.end() ? headers.find("Content-Type")->second : ""),
         std::string("GATEWAY_INTERFACE=CGI/1.1"),
-        std::string("PATH_INFO=/"),
+        std::string("PATH_INFO=") + _fullPath,
         std::string("PATH_TRANSLATED="),
         std::string("QUERY_STRING=") + request.getQueryParam(),
         std::string("REMOTE_ADDR="),
@@ -315,13 +315,15 @@ char **Cgi::mapCgiParams(std::string const & script)
         std::string("SERVER_PORT=") + StringUtils::intToString(serverInfo->getPort()),
         std::string("SERVER_PROTOCOL=") + request.getHttpVersion(),
         std::string("SERVER_SOFTWARE=webserv"),
-        std::string("REQUEST_URI=") + _fullPath};
+        std::string("REQUEST_URI=") + _fullPath,
+        std::string("REDIRECT_STATUS=200")
+    };
 
-    char **env = new char *[headers.size() + 19 + 1];
+    char **env = new char *[headers.size() + 20 + 1];
     char *var = NULL;
     int i = 0;
 
-    while (i < 19)
+    while (i < 20)
     {
         var = new char[tab[i].size() + 1];
         std::strcpy(var, tab[i].c_str());

@@ -3,7 +3,7 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
 /*   Updated: 2023/08/03 09:40:44 by eantoine         ###   ########.fr       */
@@ -136,7 +136,7 @@ ServerConf const *Client::getServerConf() const
 void Client::doOnRead()
 {
 	if (_close)
-		return _webServ->clearFd(_fd);
+		return ;
 
 	if (_startTime == 0) {
 		_startTime = TimeUtils::getTimeOfDayMs();
@@ -277,15 +277,30 @@ void Client::handleRequest() {
 		getCorrectServerConf();
 		getCorrectLocationBlock();
 		getCorrectPathRequest();
+
+		if (_request.hasMessageBody()) {
+			if (!_request.isEncoded() && _request.getBodySize() > _location->getClientBodySize())
+				throw RequestError(PAYLOAD_TOO_LARGE, "Body size too large");
+
+			if (!_callCgi) {
+				std::map<std::string, std::string>::const_iterator type;
+				type = _request.getHeaders().find("Content-Type");
+				if (type == _request.getHeaders().end())
+					throw RequestError(METHOD_NOT_ALLOWED, "Content type header missing");
+				if (type->second.compare(0, 20, "multipart/form-data;") != 0)
+					throw RequestError(METHOD_NOT_ALLOWED, "Content type: " + type->second + " is not supported");
+				_request.searchBondary();
+				_request.getUpload().setFilePath(_location->getUploadDir());
+
+			}
+		}
 	}
 
 	if (_request.hasMessageBody()) {
-		if (!_request.isEncoded() && _request.getBodySize() > _location->getClientBodySize())
-			throw RequestError(PAYLOAD_TOO_LARGE, "Body size too large");
 		if (_callCgi)
 			_request.handleMessageBody(_inputData);
 		else
-			throw RequestError(INTERNAL_SERVER_ERROR, "Upload not implemented yet");
+			_request.uploadFiles(_inputData);
 	}
 }
 

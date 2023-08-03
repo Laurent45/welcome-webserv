@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 18:05:52 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/31 18:47:31 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/01 15:46:35 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,10 +36,9 @@ Server::Server(Server const &src)
 		_serverConfs(src._serverConfs)
 {}
 
-Server &	Server::operator=(Server const &src)
-{
-	if (this != &src)
-	{
+Server &	Server::operator=(Server const &src) {
+
+	if (this != &src) {
 		_fd = src._fd;
 		_webServ = src._webServ;
 		_serverConfs = src._serverConfs;
@@ -65,8 +64,7 @@ Server::Server(int fd, WebServ & webServ, std::vector<ServerConf> const & server
  * ACCESSORS
  ************/
 
-std::vector<ServerConf> const & Server::getServerConfs() const
-{
+std::vector<ServerConf> const & Server::getServerConfs() const {
 	return _serverConfs;
 }
 /******************************************************************************/
@@ -79,30 +77,25 @@ std::vector<ServerConf> const & Server::getServerConfs() const
  * @brief 
  * @param webServ 
  */
-void	Server::doOnRead()
-{
+void	Server::doOnRead() {
+
     int			clientSocket;
 	Client *	client = NULL;
 
-	if ((clientSocket = accept(_fd, NULL, NULL)) < 0)
-	{
+	if ((clientSocket = accept(_fd, NULL, NULL)) < 0) {
 		DEBUG_COUT("Impossible to handle client request because accept failed");
 		return ;
 	}
 
-	try
-	{
+	try {
 		if (fcntl(clientSocket, F_SETFL, O_NONBLOCK) < 0)
 			throw FileDescriptorError(strerror(errno));
 		_webServ->updateEpoll(clientSocket, EPOLLIN, EPOLL_CTL_ADD);
-	} 
-	catch (std::exception & e)
-	{
+	} catch (std::exception & e) {
 		close(clientSocket);
 		return ;
 	}
 
-	std::cout << "Client open: " << clientSocket << std::endl;
 	client = new Client(clientSocket, *_webServ, this);
 	_webServ->addFd(clientSocket, client);
 }

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpUtils.cpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/29 21:37:33 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/30 11:16:06 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/08/02 18:31:27 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,12 @@
 
 std::map<status_code_t, std::string> const	HttpUtils::RESPONSE_STATUS = initResponseStatus();
 std::map<std::string, std::string> const	HttpUtils::MIME_TYPES = initMimeTypes();
+
+static const unsigned char					crlf[] = {'\r', '\n'};
+const unsigned char * 						HttpUtils::CRLF = crlf;
+
+static const unsigned char					crlfcrlf[] = {'\r', '\n', '\r', '\n'};
+const unsigned char * 						HttpUtils::CRLFCRLF = crlfcrlf;
 
 /*****************
 * CANNONICAL FORM
