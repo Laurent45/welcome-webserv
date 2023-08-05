@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 19:19:11 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/03 16:56:03 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/05 22:30:39 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,7 +67,11 @@ void Response::errorResponse(status_code_t code, Client &client) {
 
     std::vector<unsigned char> error;
 
-    getFileContent(client.getServerConf()->getError(), error);
+    if (!client.getServerConf())
+        getFileContent(client.getServer()->getServerConfs()[0].getError(), error);
+    else
+        getFileContent(client.getServerConf()->getError(), error);
+
     std::pair<status_code_t, std::string> statusCode = HttpUtils::getResponseStatus(code);
 
     std::string headers = commonResponse(code, false);
@@ -85,8 +89,7 @@ void Response::errorResponse(status_code_t code, Client &client) {
  * @brief
  *
  */
-void Response::getResponse(std::string const &path, Client &client)
-{
+void Response::getResponse(std::string const &path, Client &client) {
 
     struct stat stat;
     std::vector<unsigned char> body;
@@ -117,8 +120,7 @@ void Response::getResponse(std::string const &path, Client &client)
  * @param path
  * @param client
  */
-void Response::deleteResponse(const std::string &path, Client &client)
-{
+void Response::deleteResponse(const std::string &path, Client &client) {
     struct stat stat;
     std::string response;
 
@@ -143,6 +145,19 @@ void Response::deleteResponse(const std::string &path, Client &client)
         throw RequestError(NOT_IMPLEMENTED, "Unable to delete path");
 
     response = commonResponse(NO_CONTENT, true);
+
+    std::vector<unsigned char> data;
+    data.assign(response.begin(), response.end());
+    client.fillRawData(data);
+    client.readyToRespond();
+}
+
+
+void    Response::postResponse(Client & client) {
+
+    std::string response;
+
+    response = commonResponse(CREATED, true) + "Content-Length: 0\r\n\r\n";
 
     std::vector<unsigned char> data;
     data.assign(response.begin(), response.end());
@@ -185,8 +200,8 @@ std::string Response::commonResponse(status_code_t status, bool alive)
  * @param size
  * @return std::string
  */
-std::string Response::bodyHeaders(std::string extension, unsigned int size)
-{
+std::string Response::bodyHeaders(std::string extension, unsigned int size) {
+
     std::string headers = "Content-Type: " + HttpUtils::getMimeType(extension) + "\r\n";
     headers += "Content-Length: " + StringUtils::intToString(size) + "\r\n";
     return headers;
@@ -198,8 +213,7 @@ std::string Response::bodyHeaders(std::string extension, unsigned int size)
  * @param path
  * @param response
  */
-void Response::getFileContent(std::string const &path, std::vector<unsigned char> &response)
-{
+void Response::getFileContent(std::string const &path, std::vector<unsigned char> &response) {
 
     std::ifstream is(path.c_str(), std::ifstream::binary);
 

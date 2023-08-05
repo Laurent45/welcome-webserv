@@ -21,7 +21,7 @@
 #include "Upload.hpp"
 
 #define BUFFER_SIZE		1024
-#define	TIMEOUT			5000LL
+#define	TIMEOUT			500000LL
 
 class Client : public AFileDescriptor
 {
@@ -65,6 +65,7 @@ class Client : public AFileDescriptor
 		Client(int fd, WebServ & webServ, Server const * server);
 
 		// Geters
+		Server const *		getServer() const;
 		Request const &		getRequest() const;
 		ServerConf const *	getServerConf() const;
 

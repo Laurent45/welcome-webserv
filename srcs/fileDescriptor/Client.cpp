@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/03 17:53:34 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/05 22:43:29 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -108,13 +108,18 @@ Client::Client(int fd, WebServ &webServ, Server const *server)
  * ACCESSORS
  ************/
 
+Server const *	Client::getServer() const {
+	return (_server);
+}
+
 Request const &Client::getRequest() const {
-	return (this->_request);
+	return (_request);
 }
 
 ServerConf const *Client::getServerConf() const {
-	return (this->_serverConf);
+	return (_serverConf);
 }
+
 /******************************************************************************/
 
 /****************
@@ -298,8 +303,10 @@ void	Client::handleRequest() {
 	if (_request.hasMessageBody()) {
 		if (_callCgi)
 			_request.handleMessageBody(_inputData);
-		else
+		else {
 			_request.uploadFiles(_inputData);
+			return Response::postResponse(*this);
+		}
 	}
 	
 	if (_callCgi)

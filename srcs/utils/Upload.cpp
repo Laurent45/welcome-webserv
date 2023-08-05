@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/08/01 15:57:52 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/05 21:12:40 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/05 22:37:15 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -142,7 +142,9 @@ void	Upload::upload(std::vector<unsigned char> & data, size_t & bodySize) {
 			clear();
 			if (!_finish)
 				throw RequestUncomplete();
-			return ;
+			// TODO: Handle remaining data
+			data.erase(data.begin(), (data.begin() + 4));
+			return ; 
 		}
 		ref = it + 1;
 		it = std::search(ref, end, hyphen, hyphen + 2);
