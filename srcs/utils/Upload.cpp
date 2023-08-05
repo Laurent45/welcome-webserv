@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/08/01 15:57:52 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/02 21:39:21 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/05 21:12:40 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -171,12 +171,16 @@ void	Upload::openUploadFile(std::map<std::string, std::string> const & headers) 
 	if (it == headers.end())
 		throw RequestError(BAD_REQUEST, "Missing content disposition header to handle upload");
 
-	size_t pos = it->second.find("filename=\"");
+	std::string ref = "filename=\"";
+
+	size_t pos = it->second.find(ref);
 	if (pos == std::string::npos)
 		throw RequestError(BAD_REQUEST, "Missing filename in Content-Disposition header");
+	size_t lastQuote = it->second.find("\"", pos + ref.size());
+	if (lastQuote == std::string::npos)
+		throw RequestError(BAD_REQUEST, "Missing filename in Content-Disposition header");
 
-	_fileName = it->second.substr(pos + 10);
-	_fileName = _fileName.substr(0, _fileName.size() - 1);
+	_fileName = it->second.substr(pos + ref.size(), lastQuote - (pos + ref.size()));
 
 	if (_fileName.empty())
 		throw RequestError(BAD_REQUEST, "Filename to upload is empty");
