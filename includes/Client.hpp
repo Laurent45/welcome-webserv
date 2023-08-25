@@ -65,6 +65,7 @@ class Client : public AFileDescriptor
 		Client(int fd, WebServ & webServ, Server const * server);
 
 		// Geters
+		Server const *		getServer() const;
 		Request const &		getRequest() const;
 		ServerConf const *	getServerConf() const;
 

@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 18:21:33 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/02 21:37:34 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/25 14:17:30 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,6 +48,7 @@ Request & Request::operator=(Request const & rhs)
 		_messageBody = rhs._messageBody;
 		_encode = rhs._encode;
 		_bodySize = rhs._bodySize;
+		_upload = rhs._upload;
 	}
 
 	return (*this);
@@ -248,7 +249,6 @@ void	Request::uploadFiles(std::vector<unsigned char> & rawData) {
 	}
 
 	_upload.upload(rawData, _bodySize);
-	throw RequestError(NOT_FOUND, "File uploaded");
 }
 
 
