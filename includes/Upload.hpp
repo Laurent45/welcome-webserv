@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/08/01 15:58:31 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/02 21:38:39 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/07 13:13:21 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,6 +31,7 @@ class Upload
         bool            _finish;
 
         void    openUploadFile(std::map<std::string, std::string> const & headers);
+        void	handleRemainingData(std::vector<unsigned char> & data, size_t & bodySize);
 
     public:
 
@@ -43,7 +44,7 @@ class Upload
         void	setBondary(std::string const & bondary);
         void    setFilePath(std::string const & path);
 
-        void    prepareUpload(std::vector<unsigned char> & data, size_t & bodySize);
+        void    prepareUpload(std::vector<unsigned char> & data, size_t & bodySize, bool finish = false);
         void    upload(std::vector<unsigned char> & data, size_t & bodySize);
         void    clear();
 };

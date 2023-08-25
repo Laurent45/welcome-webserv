@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/08/01 15:57:52 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/05 22:37:15 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/07 13:17:23 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -80,13 +80,17 @@ void	Upload::setFilePath(std::string const & filePath) {
  ****************/
 
 
-void    Upload::prepareUpload(std::vector<unsigned char> & data, size_t & bodySize) {
+void    Upload::prepareUpload(std::vector<unsigned char> & data, size_t & bodySize, bool finish) {
     
 	std::vector<unsigned char>::iterator ite;
 
 	ite = std::search(data.begin(), data.end(), HttpUtils::CRLFCRLF, HttpUtils::CRLFCRLF + 4);
-	if (ite == data.end())
-		throw RequestUncomplete();
+	if (ite == data.end()) {
+		if (finish)
+			return ;
+		else
+			throw RequestUncomplete();
+	}
 
 	std::map<std::string, std::string> heads;
 	std::string headers(data.begin(), ite);
@@ -131,21 +135,23 @@ void	Upload::upload(std::vector<unsigned char> & data, size_t & bodySize) {
 			throw RequestUncomplete();
 
 		if (tmp.compare(0, _bondary.size(), _bondary) == 0) {
-			// clear data en update body size
+			/* Write data before it */
 			if (it != data.begin()) {
 				_file.write((char *) &(*data.begin()), (&(*it)) - &(*data.begin()));
 				if (!_file.good())
 					throw RequestError(INTERNAL_SERVER_ERROR, "");
 			}
+
+			/* clear data en update body size */
 			bodySize -= ((&(*ref) + _bondary.size()) - &(*data.begin()));
 			data.erase(data.begin(), (it + _bondary.size()));
 			clear();
+
 			if (!_finish)
 				throw RequestUncomplete();
-			// TODO: Handle remaining data
-			data.erase(data.begin(), (data.begin() + 4));
-			return ; 
+			return handleRemainingData(data, bodySize); 
 		}
+
 		ref = it + 1;
 		it = std::search(ref, end, hyphen, hyphen + 2);
 	}
@@ -153,10 +159,13 @@ void	Upload::upload(std::vector<unsigned char> & data, size_t & bodySize) {
 	_file.write((char *) &(*data.begin()), (&(*end) - &(*data.begin())));
 	if (!_file.good())
 		throw RequestError(INTERNAL_SERVER_ERROR, "Failed to upload file");
+
 	bodySize -= (&(*end) - &(*data.begin()));
 	data.erase(data.begin(), end);
+
 	if (!_finish)
 		throw RequestUncomplete();
+
 	_file.close();
 }
 
@@ -191,4 +200,12 @@ void	Upload::openUploadFile(std::map<std::string, std::string> const & headers) 
 	if (!_file.good())
 		throw RequestError(INTERNAL_SERVER_ERROR, "Failed to open file for upload");
 	_uploading = true;
+}
+
+
+void	Upload::handleRemainingData(std::vector<unsigned char> & data, size_t & bodySize) {
+	prepareUpload(data, bodySize, true);
+	if (_file.is_open())
+		_file.close();
+	
 }
