@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Response.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 19:19:11 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/25 14:25:18 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/29 14:51:44 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -102,7 +102,7 @@ void Response::getResponse(std::string const &path, Client &client)
 
     if (S_ISDIR(stat.st_mode))
         throw RequestError(INTERNAL_SERVER_ERROR, "Should open default directory file");
-    // getDirectoryStructure();
+    // TODO get index ou getDirectoryStructure();
     else
         getFileContent(path, body);
 

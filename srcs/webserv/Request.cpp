@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 18:21:33 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/29 13:41:56 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/08/29 14:29:42 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -136,7 +136,6 @@ void	Request::handleRequestLine(std::vector<unsigned char> & rawData)
 {
 	std::vector<unsigned char>::iterator it;
 	unsigned char src[] = {'\r', '\n'};
-	std::cout <<rawData.size()<<"\n";
 	if (rawData.size() > MAX_URI_LENGTH)
 		throw RequestError(URI_TOO_LONG, "Request line is too long");
 
