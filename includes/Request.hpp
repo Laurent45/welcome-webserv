@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Request.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 18:20:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/02 21:37:04 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/29 12:17:09 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,8 @@
 #include <string>
 #include <map>
 #include <vector>
+#define MAX_URI_LENGTH  2000
+#define CLIENT_HEADER_SIZE 2000
 
 class Request
 {

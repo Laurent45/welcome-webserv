@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/28 16:27:42 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/26 22:49:28 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/08/29 10:06:52 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -58,6 +58,7 @@ class StringUtils
 		static std::string 				trimLineToI(std::string &str, size_t pos);
 		static int						findClosingBracket(std::string str);
 		static std::vector<std::string> splitString(std::string str, const std::string &charset = " ");
+		static std::vector<std::string> splitStringSingle(std::string str, const std::string &charset = " ");
 		static std::string				intToString(int num);
 		static void						addCwd(std::string &path);
 		static int						nbDeclarations(std::string const &str);

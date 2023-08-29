@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/28 16:08:56 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/31 23:25:56 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/08/29 10:06:09 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -289,6 +289,23 @@ std::vector<std::string> StringUtils::splitString(std::string str, const std::st
         token = str.substr(0, pos);
         if(token.compare(""))
 			tokens.push_back(token);
+        str.erase(0, pos + 1);
+    }
+    tokens.push_back(str);
+    return tokens;
+}
+
+std::vector<std::string> StringUtils::splitStringSingle(std::string str, const std::string &charset)
+{
+	std::vector<std::string> tokens;
+    size_t pos = 0;
+    std::string token;
+	std::string tmpStr;
+
+    while ((pos = str.find_first_of(charset)) != std::string::npos)
+	{
+        token = str.substr(0, pos);
+		tokens.push_back(token);
         str.erase(0, pos + 1);
     }
     tokens.push_back(str);

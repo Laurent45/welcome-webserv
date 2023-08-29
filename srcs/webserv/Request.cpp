@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Request.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 18:21:33 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/25 14:17:30 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/29 13:41:56 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #include "StringUtils.hpp"
 #include "HttpUtils.hpp"
 #include "Exception.hpp"
+#include <limits>
 
 #include <string>
 #include <algorithm> // all_of
@@ -135,13 +136,16 @@ void	Request::handleRequestLine(std::vector<unsigned char> & rawData)
 {
 	std::vector<unsigned char>::iterator it;
 	unsigned char src[] = {'\r', '\n'};
+	std::cout <<rawData.size()<<"\n";
+	if (rawData.size() > MAX_URI_LENGTH)
+		throw RequestError(URI_TOO_LONG, "Request line is too long");
 
 	it = std::search(rawData.begin(), rawData.end(), src, src + 2);
 	if (it == rawData.end())
 		throw RequestUncomplete();
 
 	std::string requestLine(rawData.begin(), it);
-	std::vector<std::string> vec = StringUtils::splitString(requestLine, " ");
+	std::vector<std::string> vec = StringUtils::splitStringSingle(requestLine, " ");
 	if (vec.size() != 3)
 		throw RequestError(BAD_REQUEST, "Request line is invalid");
 	_httpMethod = vec[0];
@@ -167,6 +171,13 @@ void	Request::handleRequestLine(std::vector<unsigned char> & rawData)
 	rawData.erase(rawData.begin(), it + 2);
 }
 
+bool isNumber(const std::string& str) {
+    char* end;
+    std::strtol(str.c_str(), &end, 10);
+
+    // Si end pointe vers la fin de la chaîne, alors la conversion a réussi
+    return (*end == '\0');
+}
 
 /**
  * @brief 
@@ -176,6 +187,8 @@ void	Request::handleHeaders(std::vector<unsigned char> & rawData) {
 
 	std::vector<unsigned char>::iterator ite;
 	unsigned char src[] = {'\r', '\n', '\r', '\n'};
+	if (rawData.size() > CLIENT_HEADER_SIZE)
+		throw RequestError(BAD_REQUEST, "Header size is too large");
 
 	ite = std::search(rawData.begin(), rawData.end(), src, src + 4);
 	if (ite == rawData.end())
@@ -184,17 +197,26 @@ void	Request::handleHeaders(std::vector<unsigned char> & rawData) {
 	std::string headers(rawData.begin(), ite);
 	std::vector<std::string> vec = StringUtils::splitString(headers, "\r\n");
 	std::vector<std::string>::iterator it = vec.begin();
-
 	for (; it != vec.end(); it++) {
 		size_t sep = (*it).find(":");
 		if (sep == std::string::npos)
 			continue;
 		if (std::find_if((*it).begin(), (*it).begin() + sep, isblank) != (*it).begin()+sep)
-			continue;
+			throw RequestError(BAD_REQUEST, "Invalid space before :");
 		std::string key = (*it).substr(0, sep);
+		if (!key.compare(""))
+			throw RequestError(BAD_REQUEST, "Empty header directive");
 		std::string value = StringUtils::trimWhitespaces((*it).substr(sep + 1));
 		if (key == "Transfer-Encoding")
 			_encode = true;
+		if (key == "Content-Length"){
+			if (!isNumber(value) || atol(value.c_str()) > std::numeric_limits<int>::max() || atol(value.c_str())< 0)
+			{
+				throw RequestError(BAD_REQUEST, "Content-Length value is wrong");	
+			}
+			if (_headers.find("Content-Length") != _headers.end())
+				throw RequestError(BAD_REQUEST, "Only one Content-Length directive accepted");
+		}
 		_headers[key] = value;
 	}
 
