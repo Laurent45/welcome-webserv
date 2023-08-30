@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 23:51:46 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/01 10:03:10 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/30 15:00:35 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -158,7 +158,6 @@ void Cgi::doOnRead() {
     // TODO: Always check the body size    
 
     if (n == 0) {
-        std::cout << "TEst" << std::endl;
         _webServ->updateEpoll(_fdRead, 0, EPOLL_CTL_DEL);
 		_webServ->removeFd(_fdRead);
         close(_fdRead);

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Response.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 19:19:11 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/29 14:51:44 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/08/30 17:15:33 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,7 @@
 #include "Client.hpp"
 #include "Exception.hpp"
 #include "FileUtils.hpp"
+#include "AutoIndex.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -67,10 +68,15 @@ void Response::errorResponse(status_code_t code, Client &client) {
 
     std::vector<unsigned char> error;
 
-    if (!client.getServerConf())
-        getFileContent(client.getServer()->getServerConfs()[0].getError(), error);
-    else
-        getFileContent(client.getServerConf()->getError(), error);
+    try {
+        if (!client.getServerConf())
+            getFileContent(client.getServer()->getServerConfs()[0].getError(), error);
+        else
+            getFileContent(client.getServerConf()->getError(), error);
+    } catch (std::exception & e) {
+        std::string errorBody = staticError(code);
+        error.assign(errorBody.begin(), errorBody.end());
+    }
 
     std::pair<status_code_t, std::string> statusCode = HttpUtils::getResponseStatus(code);
 
@@ -89,9 +95,7 @@ void Response::errorResponse(status_code_t code, Client &client) {
  * @brief
  *
  */
-void Response::getResponse(std::string const &path, Client &client)
-{
-
+void Response::getResponse(std::string const &path, Client &client) {
     struct stat stat;
     std::vector<unsigned char> body;
     std::string headers;
@@ -100,9 +104,11 @@ void Response::getResponse(std::string const &path, Client &client)
     if (lstat(path.c_str(), &stat) == -1)
         throw RequestError(NOT_FOUND, "Impossible to get information about path");
 
-    if (S_ISDIR(stat.st_mode))
-        throw RequestError(INTERNAL_SERVER_ERROR, "Should open default directory file");
-    // TODO get index ou getDirectoryStructure();
+    if (S_ISDIR(stat.st_mode)) {
+        AutoIndex autoIndex(path);
+        std::string str = autoIndex.getIndexPage();
+        body.assign(str.begin(), str.end());
+    }
     else
         getFileContent(path, body);
 
@@ -230,10 +236,26 @@ void Response::getFileContent(std::string const &path, std::vector<unsigned char
     is.read(buffer, length);
 
     if (!is.good())
-        throw RequestError(INTERNAL_SERVER_ERROR, "Faile while reading file: " + path);
+        throw RequestError(INTERNAL_SERVER_ERROR, "Failed while reading file: " + path);
 
     is.close();
 
     response.assign(buffer, buffer + length);
     delete[] buffer;
+}
+
+/**
+ * @brief 
+ * @param code 
+ * @return 
+ */
+std::string     Response::staticError(status_code_t code) 
+{
+	std::string error = "<html>\n<head><title>" + StringUtils::intToString(code);
+    error += " " + HttpUtils::getResponseStatus(code).second;
+    error += "</title></head>\n<body>\n<center><h1>";
+    error += StringUtils::intToString(code);
+    error += " " + HttpUtils::getResponseStatus(code).second;
+    error += "</h1></center>\n<hr><center>webserv (Ubuntu)</center>\n</body>\n</html>\n";
+    return error;
 }

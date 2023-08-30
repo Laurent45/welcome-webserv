@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:13 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/01 14:15:46 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/30 15:40:49 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,7 +29,7 @@ bool g_run = true;
 * CANNONICAL FORM
 *****************/
 
-WebServ::WebServ()
+WebServ::WebServ() : _epollFd(-1)
 {}
 
 WebServ::WebServ(WebServ const & copy)
@@ -56,7 +56,8 @@ WebServ::~WebServ() {
 			close(it->first);
 		}
 	}
-	close(_epollFd);
+	if (_epollFd != -1)
+		close(_epollFd);
 }
 /******************************************************************************/
 

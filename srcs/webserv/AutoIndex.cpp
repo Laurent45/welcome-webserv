@@ -1,25 +1,39 @@
-#include "Autoindex.hpp"
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   AutoIndex.cpp                                      :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2023/08/30 16:52:51 by lfrederi          #+#    #+#             */
+/*   Updated: 2023/08/30 17:09:32 by lfrederi         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "AutoIndex.hpp"
 #include "StringUtils.hpp"
 #include "TimeUtils.hpp"
+#include "Exception.hpp"
+
 #include <dirent.h>
 #include <sys/stat.h>
 
-autoindex::autoindex(const std::string &path) : _dirPath(""),
+AutoIndex::AutoIndex(const std::string &path) : _dirPath(""),
 												_indexPage("")
 {
 	_dirPath += path;
 	_generateIndexPage();
 }
 
-autoindex::autoindex(const autoindex &other) : _dirPath(other.getDirPath()),
+AutoIndex::AutoIndex(const AutoIndex &other) : _dirPath(other.getDirPath()),
 											   _indexPage(other.getIndexPage())
 {
 	*this = other;
 }
 
-autoindex::~autoindex() {}
+AutoIndex::~AutoIndex() {}
 
-autoindex &autoindex::operator=(const autoindex &other)
+AutoIndex &AutoIndex::operator=(const AutoIndex &other)
 {
 	if (this != &other)
 	{
@@ -29,7 +43,7 @@ autoindex &autoindex::operator=(const autoindex &other)
 	return (*this);
 }
 
-std::string autoindex::_getFileLink(const unsigned char fileType, std::string fileName)
+std::string AutoIndex::_getFileLink(const unsigned char fileType, std::string fileName)
 {
 	std::string fileLink;
 
@@ -48,11 +62,11 @@ std::string autoindex::_getFileLink(const unsigned char fileType, std::string fi
 }
 
 // file link + file info
-std::string autoindex::_generateHtmlLink(const unsigned char fileType, const std::string &fileName)
+std::string AutoIndex::_generateHtmlLink(const unsigned char fileType, const std::string &fileName)
 {
 	struct stat fileInfos;
 	std::string link;
-	std::string filePath(_dirPath + fileName);
+	std::string filePath(_dirPath + "//" + fileName);
 
 	if (fileName == "." || fileName == ".." || stat(filePath.c_str(), &fileInfos) != 0)
 		return ("");
@@ -64,16 +78,15 @@ std::string autoindex::_generateHtmlLink(const unsigned char fileType, const std
 	return (link);
 }
 
-void autoindex::_generateIndexPage()
+void AutoIndex::_generateIndexPage()
 {
 	DIR *dir;
 	struct dirent *file;
 
 	dir = opendir(_dirPath.c_str());
 	if (!dir)
-	{
-		;//TODO createerror response
-	}
+		throw RequestError(INTERNAL_SERVER_ERROR, "Error read directory in autoindex");
+
 	_indexPage += _generateHtmlHeader();
 	for (file = readdir(dir); file != NULL; file = readdir(dir))
 	{
@@ -83,7 +96,7 @@ void autoindex::_generateIndexPage()
 	closedir(dir);
 }
 
-std::string autoindex::_generateHtmlFooter()
+std::string AutoIndex::_generateHtmlFooter()
 {
 	std::string footer;
 
@@ -93,14 +106,14 @@ std::string autoindex::_generateHtmlFooter()
 	return (footer);
 }
 
-std::string autoindex::_generateHtmlHeader()
+std::string AutoIndex::_generateHtmlHeader()
 {
 	std::string header;
 
 	header = "<!DOCTYPE html>\n\
     <html>\n\
         <head>\n\
-            <title>Autoindex </title>\n\
+            <title>AutoIndex </title>\n\
 			<meta charset=\"UTF-8\">\n\
         </head>\n\
 		<style>\n\
@@ -121,12 +134,12 @@ std::string autoindex::_generateHtmlHeader()
 }
 
 
-void autoindex::_formatCell(std::string *data)
+void AutoIndex::_formatCell(std::string *data)
 {
 	*data = "\t\t\t\t<td class=\"border\">" + *data + "</td>\n";
 }
 
-std::string autoindex::_getFileSize(struct stat fileInfos)
+std::string AutoIndex::_getFileSize(struct stat fileInfos)
 {
 	std::string size;
 
@@ -138,7 +151,7 @@ std::string autoindex::_getFileSize(struct stat fileInfos)
 	return (size);
 }
 
-std::string autoindex::_getFileModTime(struct stat fileInfos)
+std::string AutoIndex::_getFileModTime(struct stat fileInfos)
 {
 	std::string time;
 
@@ -148,12 +161,12 @@ std::string autoindex::_getFileModTime(struct stat fileInfos)
 }
 
 
-std::string autoindex::getDirPath() const
+std::string AutoIndex::getDirPath() const
 {
 	return (_dirPath);
 }
 
-std::string autoindex::getIndexPage() const
+std::string AutoIndex::getIndexPage() const
 {
 	return (_indexPage);
 } 

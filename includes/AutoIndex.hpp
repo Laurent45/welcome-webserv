@@ -1,8 +1,9 @@
-#ifndef C_AUTOINDEX_HPP
-# define C_AUTOINDEX_HPP
+#ifndef AUTO_INDEX_HPP
+# define AUTO_INDEX_HPP
+
 #include <string>
 
-class autoindex
+class AutoIndex
 {
 	private:
 			std::string     _dirPath;
@@ -10,10 +11,10 @@ class autoindex
 
 	public:
 
-			autoindex(const std::string& path);
-			autoindex(const autoindex& other);
-			~autoindex();
-			autoindex&      operator=(const autoindex& other);
+			AutoIndex(const std::string& path);
+			AutoIndex(const AutoIndex& other);
+			~AutoIndex();
+			AutoIndex&      operator=(const AutoIndex& other);
 
 			std::string     getIndexPage() const;
 			std::string     getDirPath() const;
