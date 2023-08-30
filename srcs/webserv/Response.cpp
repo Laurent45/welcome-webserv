@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 19:19:11 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/30 17:15:33 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/30 17:46:35 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -165,6 +165,18 @@ void    Response::postResponse(Client & client) {
     std::string response;
 
     response = commonResponse(CREATED, true) + "Content-Length: 0\r\n\r\n";
+
+    std::vector<unsigned char> data;
+    data.assign(response.begin(), response.end());
+    client.fillRawData(data);
+    client.readyToRespond();
+}
+
+
+void    Response::redirectionResponse(Client & client) {
+    std::string response;
+
+    response = commonResponse(MOVED_PERMANENTLY, true) + "Content-Length: 0\r\nLocation: http://www.google.com\r\n\r\n";
 
     std::vector<unsigned char> data;
     data.assign(response.begin(), response.end());

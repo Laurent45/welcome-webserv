@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 19:19:08 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/30 16:33:38 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/30 17:30:03 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,7 @@ class Response {
         static void     errorResponse(status_code_t code, Client & client);
 		static void     deleteResponse(const std::string &path, Client & client);
         static void     postResponse(Client & client);
+        static void     redirectionResponse(Client & client);
 };
 
 #endif

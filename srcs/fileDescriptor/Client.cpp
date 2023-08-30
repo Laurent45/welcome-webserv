@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/30 16:43:01 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/30 17:30:09 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -303,7 +303,6 @@ void Client::closeClient()
  */
 void Client::handleRequest()
 {
-
 	if (_request.getHttpMethod().empty())
 		_request.handleRequestLine(_inputData);
 
@@ -324,6 +323,8 @@ void Client::handleRequest()
 				uploadRequirement();
 		}
 	}
+
+	return Response::redirectionResponse(*this);
 
 	if (_request.hasMessageBody())
 	{
