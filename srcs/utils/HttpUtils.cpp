@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpUtils.cpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/29 21:37:33 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/02 18:31:27 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/30 12:20:33 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,6 +63,7 @@ const HttpUtils::method_tab_entry_t HttpUtils::METHODS[] =
 const HttpUtils::request_header_tab_entry_t HttpUtils::REQUEST_HEADERS[] =
 {
 	{ACCEPT_CHARSET, "Accept-Charset"},
+	{ACCEPT_LANGUAGE, "Accept-Language"},
 	{CONTENT_LENGTH, "Content-Length"},
 	{AUTHORIZATION, "Authorization"},
 	{CONTENT_TYPE, "Content-Type"},

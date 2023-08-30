@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpUtils.hpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/29 21:35:05 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/02 18:38:24 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/29 10:21:48 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,6 +26,7 @@ enum method_t {
 
 enum request_header_name_t {
 	ACCEPT_CHARSET,
+	ACCEPT_LANGUAGE,
 	CONTENT_LENGTH,
 	AUTHORIZATION,
 	CONTENT_TYPE,
