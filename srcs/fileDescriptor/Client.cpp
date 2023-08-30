@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/30 17:30:09 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/30 19:32:43 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -264,22 +264,11 @@ bool Client::timeoutReached()
 	bool result = (TimeUtils::getTimeOfDayMs() - _startTime) > TIMEOUT;
 	if ((TimeUtils::getTimeOfDayMs() - _startTime) > TIMEOUT)
 	{
-
 		if (_cgi.getReadFd() != -1)
-		{
-			_webServ->updateEpoll(_cgi.getReadFd(), 0, EPOLL_CTL_DEL);
-			_webServ->removeFd(_cgi.getReadFd());
-			close(_cgi.getReadFd());
-			_cgi.setReadFd(-1);
-		}
+			_cgi.closeFdRead();
 
 		if (_cgi.getWriteFd() != -1)
-		{
-			_webServ->updateEpoll(_cgi.getWriteFd(), 0, EPOLL_CTL_DEL);
-			_webServ->removeFd(_cgi.getWriteFd());
-			close(_cgi.getWriteFd());
-			_cgi.setWriteFd(-1);
-		}
+			_cgi.closeFdWrite();
 	}
 	return (result);
 }
@@ -324,7 +313,7 @@ void Client::handleRequest()
 		}
 	}
 
-	return Response::redirectionResponse(*this);
+	// return Response::redirectionResponse(*this);
 
 	if (_request.hasMessageBody())
 	{
@@ -379,11 +368,9 @@ void Client::getCorrectServerConf()
  */
 void Client::handleScript()
 {
-
 	_cgi = Cgi(*_webServ, *this, _correctPathRequest);
 
-	if (_cgi.run() < 0)
-		return Response::errorResponse(INTERNAL_SERVER_ERROR, *this);
+	_cgi.run();
 
 	_webServ->addFd(_cgi.getWriteFd(), &_cgi);
 	_webServ->updateEpoll(_cgi.getWriteFd(), EPOLLOUT, EPOLL_CTL_ADD);
