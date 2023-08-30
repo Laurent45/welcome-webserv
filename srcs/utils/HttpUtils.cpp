@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/29 21:37:33 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/29 14:24:56 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/08/30 12:20:33 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -160,7 +160,7 @@ std::map<std::string, std::string>		HttpUtils::initMimeTypes()
 	map.insert(std::pair<std::string, std::string>("epub", "application/epub+zip"));
 	map.insert(std::pair<std::string, std::string>("gif", "image/gif"));
 	map.insert(std::pair<std::string, std::string>("htm", "text/html"));
-	map.insert(std::pair<std::string, std::string>("html", "text/html"));
+	map.insert(std::pair<std::string, std::string>("html", "text/html;charset=utf-8"));
 	map.insert(std::pair<std::string, std::string>("ico", "image/x-icon"));
 	map.insert(std::pair<std::string, std::string>("ics", "text/calendar"));
 	map.insert(std::pair<std::string, std::string>("jar", "application/java-archive"));
