@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 23:39:09 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/31 17:01:39 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/30 19:31:59 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,8 @@
 #include "AFileDescriptor.hpp"
 #include <vector>
 #include <string>
+
+#define CGI_RESPONSE_SIZE_MAX 100000
 
 class Client;
 
@@ -28,7 +30,7 @@ class Cgi : public AFileDescriptor
         std::string                 _fullPath;
         int                         _fdRead;
         int                         _fdWrite;
-        int                         _pidChild; // Can remove
+        int                         _pidChild;
 
         int         initChildProcess(int toCgi[2], int fromCgi[2]);
         void        runChildProcess(int pipeToCgi[2], int pipeFromCgi[2]);        
@@ -47,14 +49,14 @@ class Cgi : public AFileDescriptor
         int     getReadFd() const;
         int     getWriteFd() const;
         int     getPidChild() const;
-        void    setReadFd(int fd);
-        void    setWriteFd(int fd);
 
        	virtual void doOnRead();
 		virtual void doOnWrite();
 		virtual void doOnError(uint32_t event);
 
-        int     run();
+        void     run();
+        void     closeFdRead();
+        void     closeFdWrite();
 
 };
 

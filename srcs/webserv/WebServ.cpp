@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:13 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/30 15:40:49 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/30 18:21:44 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 #include "Client.hpp"
 #include "Cgi.hpp"
 #include "Response.hpp"
+#include "Debugger.hpp"
 
 #include <cstring> // strerror, bzero
 #include <errno.h> // errno
@@ -135,8 +136,10 @@ void    WebServ::start() {
     struct epoll_event events[MAX_EVENTS];
 
 	while (g_run) {
-        // How handle if nfds < 0
-		nfds = epoll_wait(this->_epollFd, events, MAX_EVENTS, 1);
+		if ((nfds = epoll_wait(this->_epollFd, events, MAX_EVENTS, 1)) < 0) {
+			DEBUG_COUT("Server shut down because epoll_wait failed");
+			break ;
+		}
 
 		for (int i = 0; i < nfds; i++) {
 			int					fd = events[i].data.fd;
