@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 19:19:11 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/30 17:46:35 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/30 19:43:44 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -99,6 +99,8 @@ void Response::getResponse(std::string const &path, Client &client) {
     struct stat stat;
     std::vector<unsigned char> body;
     std::string headers;
+    size_t point;
+    std::string extension = "";
 
     bzero(&stat, sizeof(stat));
     if (lstat(path.c_str(), &stat) == -1)
@@ -112,7 +114,10 @@ void Response::getResponse(std::string const &path, Client &client) {
     else
         getFileContent(path, body);
 
-    headers = commonResponse(OK, true) + bodyHeaders("html", body.size()) + "\r\n";
+    point = path.rfind(".");
+    if (point != std::string::npos)
+        extension = path.substr(point + 1);
+    headers = commonResponse(OK, true) + bodyHeaders(extension, body.size()) + "\r\n";
     std::vector<unsigned char> data;
     data.assign(headers.begin(), headers.end());
 

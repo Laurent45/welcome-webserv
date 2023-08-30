@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/30 19:32:43 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/30 21:13:37 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -185,7 +185,8 @@ void Client::doOnWrite()
 	if (!_responseReady)
 		return;
 
-	send(_fd, &(*_outputData.begin()), _outputData.size(), 0);
+	if (send(_fd, &(*_outputData.begin()), _outputData.size(), 0) < 0)
+		DEBUG_COUT("Send response to client failed");
 
 	/* Clear for next request */
 	_webServ->updateEpoll(_fd, EPOLLIN, EPOLL_CTL_MOD);
