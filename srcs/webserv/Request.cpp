@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Request.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 18:21:33 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/29 14:29:42 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/08/30 12:56:48 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -136,12 +136,13 @@ void	Request::handleRequestLine(std::vector<unsigned char> & rawData)
 {
 	std::vector<unsigned char>::iterator it;
 	unsigned char src[] = {'\r', '\n'};
-	if (rawData.size() > MAX_URI_LENGTH)
-		throw RequestError(URI_TOO_LONG, "Request line is too long");
 
 	it = std::search(rawData.begin(), rawData.end(), src, src + 2);
 	if (it == rawData.end())
 		throw RequestUncomplete();
+
+	if ((&(*it) - &(*rawData.begin())) > MAX_URI_LENGTH)
+		throw RequestError(URI_TOO_LONG, "request line is too long");
 
 	std::string requestLine(rawData.begin(), it);
 	std::vector<std::string> vec = StringUtils::splitStringSingle(requestLine, " ");
@@ -170,13 +171,6 @@ void	Request::handleRequestLine(std::vector<unsigned char> & rawData)
 	rawData.erase(rawData.begin(), it + 2);
 }
 
-bool isNumber(const std::string& str) {
-    char* end;
-    std::strtol(str.c_str(), &end, 10);
-
-    // Si end pointe vers la fin de la chaîne, alors la conversion a réussi
-    return (*end == '\0');
-}
 
 /**
  * @brief 
@@ -186,54 +180,19 @@ void	Request::handleHeaders(std::vector<unsigned char> & rawData) {
 
 	std::vector<unsigned char>::iterator ite;
 	unsigned char src[] = {'\r', '\n', '\r', '\n'};
-	if (rawData.size() > CLIENT_HEADER_SIZE)
-		throw RequestError(BAD_REQUEST, "Header size is too large");
 
 	ite = std::search(rawData.begin(), rawData.end(), src, src + 4);
 	if (ite == rawData.end())
 		throw RequestUncomplete();
 
+	if ((&(*ite) - &(*rawData.begin())) > CLIENT_HEADER_SIZE)
+		throw RequestError(URI_TOO_LONG, "request line is too long");
+
 	std::string headers(rawData.begin(), ite);
 	std::vector<std::string> vec = StringUtils::splitString(headers, "\r\n");
-	std::vector<std::string>::iterator it = vec.begin();
-	for (; it != vec.end(); it++) {
-		size_t sep = (*it).find(":");
-		if (sep == std::string::npos)
-			continue;
-		if (std::find_if((*it).begin(), (*it).begin() + sep, isblank) != (*it).begin()+sep)
-			throw RequestError(BAD_REQUEST, "Invalid space before :");
-		std::string key = (*it).substr(0, sep);
-		if (!key.compare(""))
-			throw RequestError(BAD_REQUEST, "Empty header directive");
-		std::string value = StringUtils::trimWhitespaces((*it).substr(sep + 1));
-		if (key == "Transfer-Encoding")
-			_encode = true;
-		if (key == "Content-Length"){
-			if (!isNumber(value) || atol(value.c_str()) > std::numeric_limits<int>::max() || atol(value.c_str())< 0)
-			{
-				throw RequestError(BAD_REQUEST, "Content-Length value is wrong");	
-			}
-			if (_headers.find("Content-Length") != _headers.end())
-				throw RequestError(BAD_REQUEST, "Only one Content-Length directive accepted");
-		}
-		_headers[key] = value;
-	}
 
-	if (_headers.find("Host") == _headers.end())
-		throw RequestError(BAD_REQUEST, "Host header is mandatory");
+	parsingHeaders(vec);
 
-	if (_httpMethod == "POST") {
-		std::map<std::string, std::string>::iterator length = _headers.find("Content-Length");
-		std::map<std::string, std::string>::iterator encod = _headers.find("Transfer-Encoding");
-		if (length == _headers.end() && encod == _headers.end())
-			throw RequestError(BAD_REQUEST, "Header about post body is missing");
-		if (_encode == false) {
-			long convert = atol(length->second.c_str());
-			if (convert <= 0)
-				throw RequestError(BAD_REQUEST, "Body size has an invalid value");
-			_bodySize = convert;
-		}
-	}
 	rawData.erase(rawData.begin(), ite + 4);
 }
 
@@ -289,6 +248,53 @@ void	Request::searchBondary() {
 
 	_upload.setBondary(value.substr(pos + bondary.size()));
 }
+
+/******************************************************************************/
+
+/****************
+* PRIVATE
+****************/
+
+/**
+ * @brief 
+ * @param headers 
+ */
+void	Request::parsingHeaders(std::vector<std::string> const & headers) {
+
+	for (std::vector<std::string>::const_iterator it = headers.begin(); it != headers.end(); it++) {
+		size_t sep = (*it).find(":");
+		if (sep == std::string::npos)
+			continue;
+		if (std::find_if((*it).begin(), (*it).begin() + sep, isblank) != (*it).begin()+sep)
+			throw RequestError(BAD_REQUEST, "Invalid space before :");
+		std::string key = (*it).substr(0, sep);
+		if (!key.compare(""))
+			throw RequestError(BAD_REQUEST, "Empty header directive");
+		std::string value = StringUtils::trimWhitespaces((*it).substr(sep + 1));
+		if (key == "Transfer-Encoding")
+			_encode = true;
+		if (key == "Content-Length") {
+			long size = atol(value.c_str());
+			if (!StringUtils::isNumber(value) || size > std::numeric_limits<int>::max() || size <= 0)
+				throw RequestError(BAD_REQUEST, "Content-Length value is wrong");
+			_bodySize = size;	
+			if (_headers.find("Content-Length") != _headers.end())
+				throw RequestError(BAD_REQUEST, "Only one Content-Length directive accepted");
+		}
+		_headers[key] = value;
+	}
+
+	if (_headers.find("Host") == _headers.end())
+		throw RequestError(BAD_REQUEST, "Host header is mandatory");
+
+	if (_httpMethod == "POST") {
+		std::map<std::string, std::string>::iterator length = _headers.find("Content-Length");
+		std::map<std::string, std::string>::iterator encod = _headers.find("Transfer-Encoding");
+		if (length == _headers.end() && encod == _headers.end())
+			throw RequestError(BAD_REQUEST, "Header about post body is missing");
+	}
+}
+
 /******************************************************************************/
 
 /****************

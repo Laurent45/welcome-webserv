@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   StringUtils.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/28 16:27:42 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/29 10:06:52 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/08/30 12:31:02 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,6 +62,7 @@ class StringUtils
 		static std::string				intToString(int num);
 		static void						addCwd(std::string &path);
 		static int						nbDeclarations(std::string const &str);
+		static bool						isNumber(const std::string& str);
 
 		struct instruction_tab_entry_t 
 		{

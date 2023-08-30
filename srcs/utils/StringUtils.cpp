@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   StringUtils.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/28 16:08:56 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/29 10:06:09 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/08/30 12:29:58 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -359,4 +359,17 @@ int		StringUtils::nbDeclarations(std::string const &str)
 		}
 	}
 	return (nbDirect);
+}
+
+/**
+ * @brief 
+ * @param str 
+ * @return 
+ */
+bool	StringUtils::isNumber(const std::string& str) {
+    char* end;
+    std::strtol(str.c_str(), &end, 10);
+
+    // Si end pointe vers la fin de la chaîne, alors la conversion a réussi
+    return (*end == '\0');
 }

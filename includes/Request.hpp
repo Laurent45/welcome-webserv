@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Request.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 18:20:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/29 12:17:09 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/08/30 12:49:55 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,6 +36,8 @@ class Request
 		bool								_encode;
 		size_t								_bodySize;
 		Upload								_upload;
+
+		void	parsingHeaders(std::vector<std::string> const & headers);
 
 	public:
 		
