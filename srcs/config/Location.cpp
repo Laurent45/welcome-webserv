@@ -289,10 +289,10 @@ void Location::setReturn(std::vector<std::string> token)
 	for (size_t i = 0; i < token[1].size(); i++)
 		if (token[1][i] < 48 && token[1][i] > 57)
 			throw(ConfFileParseError("Location bloc : return : fisrt argument must be numeric"));
-	if (val < 301 || val > 307 || (val > 303 && val < 307))
-		throw(ConfFileParseError("Location bloc : return redirection: first argument must be between 301 and 307"));
+	if (val != 302)
+		throw(ConfFileParseError("Location bloc : return redirection: first argument must be 302"));
 	if (_return.first == -1)
-		_return = std::make_pair(val, token[2]);
+		_return = std::make_pair(val, token[2].erase(token[2].size() - 1));
 }
 
 /*

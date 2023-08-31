@@ -32,7 +32,7 @@ class Response {
         static void     errorResponse(status_code_t code, Client & client);
 		static void     deleteResponse(const std::string &path, Client & client);
         static void     postResponse(Client & client);
-        static void     redirectionResponse(Client & client);
+        static void     redirectionResponse(Client & client, std::string redir);
 };
 
 #endif

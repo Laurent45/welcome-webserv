@@ -47,26 +47,25 @@ std::string AutoIndex::_getFileLink(const unsigned char fileType, std::string fi
 {
 	std::string fileLink;
 
-	fileLink = "<a href=\"" + fileName;
+	fileLink = "<p>" + fileName;
 	if (fileType == DT_DIR) // file is directory
 		fileLink += "/";
 	if (fileType == DT_DIR)
-		fileLink += "\">📂 ";
+		fileLink += " 📂";
 	else 	if (fileType == DT_LNK)// file is link
-		fileLink += "\">✍ ";
+		fileLink += " ✍";
 	else
-		fileLink += "\">✉ ";
-	fileLink += fileName + "</a>";
+		fileLink += " ✉";
+	fileLink += "</p>";
 	_formatCell(&fileLink);
 	return (fileLink);
 }
 
-// file link + file info
 std::string AutoIndex::_generateHtmlLink(const unsigned char fileType, const std::string &fileName)
 {
 	struct stat fileInfos;
 	std::string link;
-	std::string filePath(_dirPath + "//" + fileName);
+	std::string filePath(_dirPath + "/" + fileName);
 
 	if (fileName == "." || fileName == ".." || stat(filePath.c_str(), &fileInfos) != 0)
 		return ("");

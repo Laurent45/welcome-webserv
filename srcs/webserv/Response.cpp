@@ -102,6 +102,10 @@ void Response::getResponse(std::string const &path, Client &client) {
     size_t point;
     std::string extension = "";
 
+    point = path.rfind(".");
+    if (point != std::string::npos)
+        extension = path.substr(point + 1);
+
     bzero(&stat, sizeof(stat));
     if (lstat(path.c_str(), &stat) == -1)
         throw RequestError(NOT_FOUND, "Impossible to get information about path");
@@ -109,14 +113,13 @@ void Response::getResponse(std::string const &path, Client &client) {
     if (S_ISDIR(stat.st_mode)) {
         AutoIndex autoIndex(path);
         std::string str = autoIndex.getIndexPage();
+        extension = "html";
         body.assign(str.begin(), str.end());
     }
     else
         getFileContent(path, body);
 
-    point = path.rfind(".");
-    if (point != std::string::npos)
-        extension = path.substr(point + 1);
+
     headers = commonResponse(OK, true) + bodyHeaders(extension, body.size()) + "\r\n";
     std::vector<unsigned char> data;
     data.assign(headers.begin(), headers.end());
@@ -156,7 +159,7 @@ void Response::deleteResponse(const std::string &path, Client &client) {
     else
         throw RequestError(NOT_IMPLEMENTED, "Unable to delete path");
 
-    response = commonResponse(NO_CONTENT, true);
+    response = commonResponse(NO_CONTENT, true) + "Content-Length: 0\r\n\r\n";
 
     std::vector<unsigned char> data;
     data.assign(response.begin(), response.end());
@@ -178,10 +181,11 @@ void    Response::postResponse(Client & client) {
 }
 
 
-void    Response::redirectionResponse(Client & client) {
+void    Response::redirectionResponse(Client & client, std::string redir) {
     std::string response;
 
-    response = commonResponse(MOVED_PERMANENTLY, true) + "Content-Length: 0\r\nLocation: http://www.google.com\r\n\r\n";
+    response = commonResponse(FOUND, true) + "Content-Length: 0\r\nLocation: ";
+    response += redir + "\r\n\r\n";
 
     std::vector<unsigned char> data;
     data.assign(response.begin(), response.end());

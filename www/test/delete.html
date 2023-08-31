@@ -1,7 +1,7 @@
 <body>
     <h1>Supprimer un fichier</h1>
     <form id="deleteForm">
-        <label for="filePath">Chemin du fichier :</label>
+        <label for="filePath">Nom du fichier :</label>
         <input type="text" id="filePath" name="filePath" required>
         <button type="button" onclick="deleteFile()">Supprimer</button>
     </form>
@@ -9,7 +9,7 @@
 
     <script>
         function deleteFile() {
-            const filePath = document.getElementById('filePath').value;
+            const filePath = "/delete/" + document.getElementById('filePath').value;
 
             // Envoi de la requête DELETE au serveur
             fetch(filePath, {

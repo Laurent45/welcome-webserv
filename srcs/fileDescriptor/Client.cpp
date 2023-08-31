@@ -302,6 +302,9 @@ void Client::handleRequest()
 
 		getCorrectServerConf();
 		getCorrectLocationBlock();
+		if (_location->getReturn().first != -1)
+			return Response::redirectionResponse(*this, _location->getReturn().second);
+
 		getCorrectPathRequest();
 
 		if (_request.hasMessageBody())
@@ -313,8 +316,6 @@ void Client::handleRequest()
 				uploadRequirement();
 		}
 	}
-
-	// return Response::redirectionResponse(*this);
 
 	if (_request.hasMessageBody())
 	{
